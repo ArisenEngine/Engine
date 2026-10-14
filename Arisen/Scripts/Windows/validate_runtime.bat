@@ -144,6 +144,13 @@ set "TEST_HOST_PROFILES="
 for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field test-host-profiles`) do (
     set "TEST_HOST_PROFILES=!TEST_HOST_PROFILES! %%A"
 )
+rem Profiles whose effective startup target is a world. Only those boot the streamed content the
+rem world-streaming and terrain-streaming scenarios drive; a profile that boots a scene or a
+rem catalogue sample owns the content its own gate launches instead.
+set "WORLD_PROFILES="
+for /f "usebackq delims=" %%A in (`dotnet run --project "%BUILD_TOOL_CSPROJ%" --no-build -- manifest-info --manifest "%WORKSPACE_DIR%\manifest.json" --field world-profiles`) do (
+    set "WORLD_PROFILES=!WORLD_PROFILES! %%A"
+)
 
 echo [Arisen] Profiles: %PROFILES%
 
@@ -239,6 +246,10 @@ rem host mounts packages for discovery without initializing game subsystems, so 
 rem held to the world, terrain, and visual-summary gates.
 set "CURRENT_PROFILE_RUNTIME_GATES=0"
 if "!CURRENT_PROFILE_EDITOR!"=="0" if "!CURRENT_PROFILE_TEST_HOST!"=="0" set "CURRENT_PROFILE_RUNTIME_GATES=1"
+rem The streaming scenarios boot streamed content, so they run for the profiles whose declared
+rem startup target is a world - not for a runtime profile that boots a scene or a catalogue sample.
+set "CURRENT_PROFILE_WORLD=0"
+for %%D in (!WORLD_PROFILES!) do if /i "%%D"=="!CURRENT_PROFILE!" set "CURRENT_PROFILE_WORLD=1"
 set "CURRENT_PROFILE_LOG=%LOG_DIR%\smoke-cli-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
 set "CURRENT_VISUAL_SUMMARY_REQUESTED=0"
 set "CURRENT_VISUAL_SUMMARY_ARGS="
@@ -264,7 +275,7 @@ set "CURRENT_WORLD_STREAMING_LOG_PATH="
 set "CURRENT_WORLD_STREAMING_PASSED="
 set "CURRENT_WORLD_STREAMING_EXIT_CODE="
 set "CURRENT_WORLD_STREAMING_REQUIRED=0"
-if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_WORLD!"=="1" set "CURRENT_WORLD_STREAMING_REQUIRED=1"
 set "CURRENT_VEGETATION_VISUAL_COMPARISON_REQUESTED=0"
 set "CURRENT_VEGETATION_VISUAL_COMPARISON_PASSED="
 set "CURRENT_VEGETATION_VISUAL_DISABLED_SUMMARY_PATH="
@@ -280,7 +291,7 @@ set "CURRENT_TERRAIN_STREAMING_LOG_PATH="
 set "CURRENT_TERRAIN_STREAMING_PASSED="
 set "CURRENT_TERRAIN_STREAMING_EXIT_CODE="
 set "CURRENT_TERRAIN_STREAMING_REQUIRED=0"
-if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_WORLD!"=="1" set "CURRENT_TERRAIN_STREAMING_REQUIRED=1"
 set "CURRENT_PLAYER_LOG_PATH="
 set "CURRENT_PLAYER_LOG_SNAPSHOT_PATH="
 set "CURRENT_PLAYER_LOG_RESOLUTION_PATH="

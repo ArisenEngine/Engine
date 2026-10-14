@@ -339,6 +339,31 @@ class Program
             return;
         }
 
+        if (field.Equals("world-profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            // Profiles whose effective startup target is a world, which is what the streaming
+            // scenarios boot. A profile that declares a scene or a sample selection replaces the
+            // workspace world, so it is not a world-booting profile even though the workspace
+            // declares one.
+            if (manifest.Profiles != null)
+            {
+                foreach (var entry in manifest.Profiles)
+                {
+                    ProfileDefinition profile = entry.Value;
+                    bool declaresWorld = profile.StartupWorld != null;
+                    bool declaresOtherTarget = profile.StartupScene != null ||
+                        !string.IsNullOrWhiteSpace(profile.StartupSample);
+                    bool inheritsWorkspaceWorld =
+                        !declaresWorld && !declaresOtherTarget && manifest.StartupWorld != null;
+                    if (declaresWorld || inheritsWorkspaceWorld)
+                    {
+                        Console.WriteLine(entry.Key);
+                    }
+                }
+            }
+            return;
+        }
+
         Console.Error.WriteLine(
             $"ArisenBuildTool Manifest Info Error: unsupported field '{field}'.");
         Environment.ExitCode = 1;
