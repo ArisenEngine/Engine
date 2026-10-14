@@ -52,6 +52,13 @@ public static class KernelLog
         s_LoggerLookupAttempted = false;
     }
 
+    /// <summary>
+    /// True when a logger is registered, so the logging calls below route to it rather than falling
+    /// back to the system console. A build-stage host that has to report on the console as well as in
+    /// the log uses this to avoid printing a message the fallback has already written there.
+    /// </summary>
+    public static bool HasLogger => GetLogger() != null;
+
     public static void Info(string message)
     {
         var logger = GetLogger();
