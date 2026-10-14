@@ -364,6 +364,21 @@ class Program
             return;
         }
 
+        if (field.Equals("gallery-profiles", StringComparison.OrdinalIgnoreCase))
+        {
+            if (manifest.Profiles != null)
+            {
+                foreach (var entry in manifest.Profiles)
+                {
+                    if (entry.Value.IsSampleGallery)
+                    {
+                        Console.WriteLine(entry.Key);
+                    }
+                }
+            }
+            return;
+        }
+
         Console.Error.WriteLine(
             $"ArisenBuildTool Manifest Info Error: unsupported field '{field}'.");
         Environment.ExitCode = 1;

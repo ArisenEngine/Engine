@@ -33,6 +33,12 @@ public class ProfileDefinition
     public ProjectAssetReference? StartupWorld { get; set; }
     public string? StartupSample { get; set; }
 
+    /// <summary>
+    /// True when this profile hosts the sample gallery: it boots the hub, can switch between the
+    /// catalogue's content-only samples in-process, and its cook closes over the whole catalogue.
+    /// </summary>
+    public bool IsSampleGallery { get; set; }
+
     public List<PackageRequirement> Packages { get; set; } = new();
 }
 

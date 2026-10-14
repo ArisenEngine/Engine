@@ -185,6 +185,7 @@
       // The gallery profile: the shell plus the sample catalogue's content packages. The hub
       // scene is the default boot; a sample is selected per process with --startup-sample.
       "IsEditor": false,
+      "IsSampleGallery": true,
       "EnableProfiler": false,
       "StartupScene": {
         "Guid": "8c4d0a71-6e2b-4f53-8a1d-9b7c25e4f018",

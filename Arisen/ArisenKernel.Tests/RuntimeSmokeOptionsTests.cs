@@ -130,7 +130,27 @@ public sealed class RuntimeSmokeOptionsTests
             RuntimeSmokeOptions.Parse(
                 ["--smoke-mode", "scene", "--smoke-summary-output", "summary.json"]));
 
-        Assert.Contains("requires world-streaming or terrain-streaming smoke mode", exception.Message);
+        Assert.Contains("requires world-streaming, terrain-streaming, or", exception.Message);
+    }
+
+    [Fact]
+    public void SampleSwitchSmokeUsesBoundedNamedScenarioWindow()
+    {
+        RuntimeSmokeOptions options = RuntimeSmokeOptions.Parse(
+            [
+                "--smoke-mode",
+                "sample-switch",
+                "--frames",
+                "2",
+                "--smoke-summary-output",
+                "sample-switch-summary.json"
+            ]);
+
+        Assert.Equal(RuntimeSmokeMode.SampleSwitch, options.Mode);
+        Assert.Equal("sample-switch", options.ModeName);
+        Assert.True(options.UsesPackageScenario);
+        Assert.Equal(2048u, options.EffectiveFrameCount);
+        Assert.EndsWith("sample-switch-summary.json", options.SmokeSummaryOutputPath);
     }
 
     [Fact]

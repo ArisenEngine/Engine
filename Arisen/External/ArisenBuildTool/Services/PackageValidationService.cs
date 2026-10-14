@@ -96,6 +96,7 @@ public static class PackageValidationService
                 }
 
                 ValidateProfileStartupTarget(manifest, profileDefinition, profile, result);
+                ValidateSampleGalleryRole(manifest, profileDefinition, profile, result);
 
                 foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
                 {
@@ -232,6 +233,47 @@ public static class PackageValidationService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The gallery is one declared profile role (D7): it needs the workspace catalogue it browses,
+    /// and a second declaration is a workspace defect rather than an alternative entry point.
+    /// </summary>
+    private static void ValidateSampleGalleryRole(
+        ProjectManifest manifest,
+        ProfileDefinition profileDefinition,
+        string profile,
+        PackageValidationResult result)
+    {
+        if (!profileDefinition.IsSampleGallery)
+        {
+            return;
+        }
+
+        if (manifest.SampleCatalogue == null)
+        {
+            result.Errors.Add(
+                $"Profile '{profile}' declares IsSampleGallery, so the workspace must declare " +
+                "SampleCatalogue.");
+        }
+
+        if (manifest.Profiles == null)
+        {
+            return;
+        }
+
+        // The gallery is one reviewing profile (D7), so a second declaration is a workspace defect
+        // rather than an alternative entry point.
+        string[] galleries = manifest.Profiles
+            .Where(entry => entry.Value.IsSampleGallery)
+            .Select(entry => entry.Key)
+            .ToArray();
+        if (galleries.Length > 1)
+        {
+            result.Errors.Add(
+                $"Profiles [{string.Join(", ", galleries)}] declare IsSampleGallery. The workspace " +
+                "keeps exactly one sample gallery profile.");
+        }
     }
 
     /// <summary>

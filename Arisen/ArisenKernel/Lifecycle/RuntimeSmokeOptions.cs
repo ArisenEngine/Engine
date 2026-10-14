@@ -6,7 +6,8 @@ public enum RuntimeSmokeMode
     Scene,
     HotReload,
     WorldStreaming,
-    TerrainStreaming
+    TerrainStreaming,
+    SampleSwitch
 }
 
 internal readonly record struct RuntimeSmokeOptions(
@@ -37,7 +38,9 @@ internal readonly record struct RuntimeSmokeOptions(
     public TimeSpan EffectiveDuration => GetMaximumDuration(Mode);
 
     public bool UsesPackageScenario => Mode is
-        RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming;
+        RuntimeSmokeMode.WorldStreaming or
+        RuntimeSmokeMode.TerrainStreaming or
+        RuntimeSmokeMode.SampleSwitch;
 
     public string ModeName => Mode switch
     {
@@ -46,6 +49,7 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.HotReload => "hot-reload",
         RuntimeSmokeMode.WorldStreaming => "world-streaming",
         RuntimeSmokeMode.TerrainStreaming => "terrain-streaming",
+        RuntimeSmokeMode.SampleSwitch => "sample-switch",
         _ => Mode.ToString()
     };
 
@@ -93,6 +97,12 @@ internal readonly record struct RuntimeSmokeOptions(
             else if (string.Equals(args[i], "--smoke-terrain-streaming", StringComparison.OrdinalIgnoreCase))
             {
                 mode = RuntimeSmokeMode.TerrainStreaming;
+                modeSpecified = true;
+                enabled = true;
+            }
+            else if (string.Equals(args[i], "--smoke-sample-switch", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = RuntimeSmokeMode.SampleSwitch;
                 modeSpecified = true;
                 enabled = true;
             }
@@ -161,10 +171,13 @@ internal readonly record struct RuntimeSmokeOptions(
         }
 
         if (smokeSummaryOutputPath != null && mode is not (
-                RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming))
+                RuntimeSmokeMode.WorldStreaming or
+                RuntimeSmokeMode.TerrainStreaming or
+                RuntimeSmokeMode.SampleSwitch))
         {
             throw new ArgumentException(
-                "--smoke-summary-output requires world-streaming or terrain-streaming smoke mode.",
+                "--smoke-summary-output requires world-streaming, terrain-streaming, or " +
+                "sample-switch smoke mode.",
                 nameof(args));
         }
 
@@ -186,6 +199,9 @@ internal readonly record struct RuntimeSmokeOptions(
         RuntimeSmokeMode.HotReload => 4,
         RuntimeSmokeMode.WorldStreaming => 2048,
         RuntimeSmokeMode.TerrainStreaming => 2048,
+        // Each content sample is a world whose persistent residency has to activate before the next
+        // switch begins, so the switch path needs the same order of frames the streaming gates use.
+        RuntimeSmokeMode.SampleSwitch => 2048,
         _ => 1
     };
 
@@ -193,6 +209,7 @@ internal readonly record struct RuntimeSmokeOptions(
     {
         RuntimeSmokeMode.WorldStreaming or RuntimeSmokeMode.TerrainStreaming =>
             TimeSpan.FromSeconds(120),
+        RuntimeSmokeMode.SampleSwitch => TimeSpan.FromSeconds(120),
         _ => TimeSpan.FromSeconds(45)
     };
 
@@ -218,9 +235,15 @@ internal readonly record struct RuntimeSmokeOptions(
             return RuntimeSmokeMode.TerrainStreaming;
         }
 
+        if (string.Equals(value, "sample-switch", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "sampleswitch", StringComparison.OrdinalIgnoreCase))
+        {
+            return RuntimeSmokeMode.SampleSwitch;
+        }
+
         throw new ArgumentException(
             $"Unknown smoke mode '{value}'. Expected one of: boot, scene, hot-reload, " +
-            "world-streaming, terrain-streaming.",
+            "world-streaming, terrain-streaming, sample-switch.",
             nameof(value));
     }
 }
