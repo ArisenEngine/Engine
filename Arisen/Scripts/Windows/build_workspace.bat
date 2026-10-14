@@ -8,8 +8,14 @@ set "BUILD_CONFIG=Debug"
 set "TARGET_PROFILE="
 set "TEST_PACKAGE_ID="
 set "RUN_TESTS=0"
-set "ARISEN_NO_PAUSE="
-if defined CI set "ARISEN_NO_PAUSE=1"
+
+:: The window is kept open at the end so a hand-run or double-clicked build shows its result, and
+:: only an explicit --no-pause skips that wait. The flag is private to this script on purpose: a
+:: nested script that lacks its own setlocal used to leak ARISEN_NO_PAUSE into this one (the binding
+:: generator is called with --no-pause and set exactly that name), which closed the window without a
+:: word on every run. Automation passes --no-pause explicitly - validate_runtime.bat and
+:: validate_stability_stress.ps1 both do.
+set "ARISEN_BUILD_NO_PAUSE="
 
 :parse_args
 if "%~1"=="" goto end_parse
@@ -46,7 +52,7 @@ if /i "%~1"=="-m" (
 ) else if /i "%~1"=="--run-tests" (
     set "RUN_TESTS=1"
 ) else if /i "%~1"=="--no-pause" (
-    set "ARISEN_NO_PAUSE=1"
+    set "ARISEN_BUILD_NO_PAUSE=1"
 ) else (
     if not defined MANIFEST_PATH (
         set "MANIFEST_PATH=%~1"
@@ -219,11 +225,26 @@ for %%A in (!PROFILES!) do (
 
 echo.
 echo [Arisen] Build successful!
-if not defined ARISEN_NO_PAUSE pause
-exit /b 0
+set "ARISEN_EXIT_CODE=0"
+goto :finish
 
 :fail
 echo.
 echo [ERROR] Build Pipeline aborted due to execution or compilation errors.
-if not defined ARISEN_NO_PAUSE pause
-exit /b 1
+set "ARISEN_EXIT_CODE=1"
+
+:finish
+echo.
+if "!ARISEN_EXIT_CODE!"=="0" (
+    echo [Arisen] RESULT: SUCCESS
+) else (
+    echo [Arisen] RESULT: FAILED ^(exit code !ARISEN_EXIT_CODE!^)
+)
+if not defined ARISEN_BUILD_NO_PAUSE (
+    echo.
+    echo Press any key to close this build window . . .
+    pause >nul
+) else (
+    echo [Arisen] Not waiting for a key because --no-pause was passed.
+)
+exit /b !ARISEN_EXIT_CODE!

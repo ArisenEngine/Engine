@@ -8,8 +8,12 @@ REM =========================================================================
 set "DOTNET_CLI_UI_LANGUAGE=en-US"
 set "VSLANG=1033"
 
+:: This script deliberately leaves the MSVC environment behind for its caller (build_workspace.bat
+:: skips its own vcvars when the compiler is already configured), so it has no setlocal of its own.
+:: Every flag it keeps therefore has to be namespaced: ARISEN_NO_PAUSE belongs to the caller, and
+:: setting it here made a caller that passes --no-pause skip its own end-of-run pause.
 if /i "%~1"=="--no-pause" (
-    set "ARISEN_NO_PAUSE=1"
+    set "ARISEN_BINDINGGEN_NO_PAUSE=1"
     shift /1
 )
 
@@ -42,7 +46,7 @@ if errorlevel 1 goto :fail
 echo [3/3] Binding Generation process completed.
 echo === Binding generation succeeded ===
 echo.
-if not defined ARISEN_NO_PAUSE pause
+if not defined ARISEN_BINDINGGEN_NO_PAUSE pause
 exit /b 0
 
 :fail
@@ -51,5 +55,5 @@ echo ============================================================
 echo   PROCESS FAILED. Showing last 50 lines from log:
 echo ============================================================
 powershell -NoProfile -Command "Get-Content -LiteralPath '%GEN_LOG%' -Tail 50"
-if not defined ARISEN_NO_PAUSE pause
+if not defined ARISEN_BINDINGGEN_NO_PAUSE pause
 exit /b 1

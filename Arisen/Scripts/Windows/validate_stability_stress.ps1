@@ -993,6 +993,7 @@ try
             Invoke-Checked (Join-Path $scriptRoot "build_workspace.bat") @(
                 "--package", "com.arisen.rhi.vulkan.native",
                 "--config", $Configuration,
+                "--no-pause",
                 "--run-tests")
             $nativePackagePlayerLogs = @(
                 Get-LaunchOwnedPlayerLogs `
