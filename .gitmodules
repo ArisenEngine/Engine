@@ -61,3 +61,6 @@
 [submodule "Arisen/Development/PackageGame/Local/com.arisen.samples"]
 	path = Arisen/Development/PackageGame/Local/com.arisen.samples
 	url = https://github.com/ArisenEngine/com.arisen.samples.git
+[submodule "Arisen/Development/PackageGame/Local/com.arisen.physics"]
+	path = Arisen/Development/PackageGame/Local/com.arisen.physics
+	url = https://github.com/ArisenEngine/com.arisen.physics.git

@@ -41,6 +41,11 @@
       "Version": "1.0.0"
     },
     {
+      "Id": "com.arisen.physics",
+      "Url": "file://Local/com.arisen.physics",
+      "Version": "1.0.0"
+    },
+    {
       "Id": "com.arisen.ecs",
       "Url": "file://Local/com.arisen.ecs",
       "Version": "1.0.0"
