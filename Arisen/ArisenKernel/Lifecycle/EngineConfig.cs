@@ -49,6 +49,13 @@ public class EngineConfig
     /// </summary>
     public string? SmokeModeName { get; set; }
 
+    /// <summary>
+    /// Startup target selected on the command line. Unspecified when the workspace manifest decides,
+    /// which is the default for a workspace that ships one product; a workspace hosting several
+    /// products (the game and the sample gallery) selects the target per process instead.
+    /// </summary>
+    public StartupTargetOptions StartupTarget { get; set; } = StartupTargetOptions.None;
+
     /// <summary>B13: Topological list of package local paths to load during kernel initialization.</summary>
     public List<string> PackageUrls { get; set; } = new();
 

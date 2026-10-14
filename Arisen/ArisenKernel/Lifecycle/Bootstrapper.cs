@@ -41,10 +41,12 @@ public static class EngineBootstrapper
         bool deployedLaunch = false;
         RuntimeSmokeOptions smokeOptions;
         RuntimeAssetOptions runtimeAssetOptions;
+        StartupTargetOptions startupTargetOptions;
         try
         {
             smokeOptions = RuntimeSmokeOptions.Parse(args);
             runtimeAssetOptions = RuntimeAssetOptions.Parse(args);
+            startupTargetOptions = StartupTargetOptions.Parse(args);
         }
         catch (ArgumentException ex)
         {
@@ -266,7 +268,8 @@ public static class EngineBootstrapper
                 PackageRequirements = packageRequirements,
                 Platform = RuntimePlatform.Windows, // TODO: Deduce from OS
                 EnableSourceAssetDiagnostics = runtimeAssetOptions.EnableSourceAssetDiagnostics,
-                SmokeModeName = smokeOptions.Enabled ? smokeOptions.ModeName : null
+                SmokeModeName = smokeOptions.Enabled ? smokeOptions.ModeName : null,
+                StartupTarget = startupTargetOptions
             };
 
             // 2. Mount packages first so an application host can select package-only or full-engine startup.
@@ -286,13 +289,13 @@ public static class EngineBootstrapper
             if (packageOnlyHost != null)
             {
                 KernelLog.Info("[Host] Package graph mount complete; subsystem initialization was not requested by the application host.");
-                LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
+                LogRuntimeDiagnostics(kernel, packageSubsystem, projectSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions, startupTargetOptions);
             }
             else
             {
                 KernelLog.Info("[Host] Kernel Initialization Complete.");
                 KernelLog.Info("[Host] Topological Mount Complete.");
-                LogRuntimeDiagnostics(kernel, packageSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions);
+                LogRuntimeDiagnostics(kernel, packageSubsystem, projectSubsystem, workspacePath, profile, resolvedManifestPath, smokeOptions, startupTargetOptions);
 
                 if (smokeOptions.Enabled)
                 {
@@ -771,14 +774,18 @@ public static class EngineBootstrapper
     private static void LogRuntimeDiagnostics(
         EngineKernel kernel,
         PackageSubsystem packageSubsystem,
+        ProjectSubsystem projectSubsystem,
         string workspacePath,
         string profile,
         string resolvedManifestPath,
-        RuntimeSmokeOptions smokeOptions)
+        RuntimeSmokeOptions smokeOptions,
+        StartupTargetOptions startupTargetOptions)
     {
         KernelLog.Info("[Host] Runtime diagnostics:");
         KernelLog.InfoFormat("  Workspace: {0}", workspacePath);
         KernelLog.InfoFormat("  Profile: {0}", profile);
+        KernelLog.InfoFormat("  StartupTargetSource: {0}", startupTargetOptions.Specified ? "arguments" : "manifest");
+        KernelLog.InfoFormat("  StartupTarget: {0}", startupTargetOptions.Resolve(projectSubsystem.ActiveProject).Describe());
         KernelLog.InfoFormat("  SmokeMode: {0}", smokeOptions.Enabled);
         KernelLog.InfoFormat("  SmokeKind: {0}", smokeOptions.Enabled ? smokeOptions.ModeName : "<none>");
         KernelLog.InfoFormat("  SmokeFramesRequested: {0}", smokeOptions.Enabled ? smokeOptions.RequestedFrameCount : 0);
