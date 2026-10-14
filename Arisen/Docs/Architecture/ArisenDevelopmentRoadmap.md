@@ -233,6 +233,15 @@ the hub.
 - S6 isolation profiles: a small number of profiles for the samples whose subject is isolation
   itself, never one profile per capability.
 
+**S0 has landed.** `com.arisen.app` owns startup-target activation and the interactive runtime
+viewer, every product depends on it, and the target is selected with
+`--startup-scene <packageId>:<guid>` or `--startup-world <packageId>:<guid>`. The asset cook follows
+the same selection, so a cooked-only profile can boot content the manifest does not name. The gate
+ran as one Development workspace booting the manifest's MistfallValley world, LanternWorld
+(`--startup-world com.arisen.samples:9a9b4db5-...`), and the persistent scene directly
+(`--startup-scene`), with a malformed value and an uncooked world both failing the boot with exit
+code 1.
+
 **Motivation.** Capability has no catalogue today. A profile decides the package graph at boot, so a
 capability can only be seen by knowing which workspace, profile, and solution to launch.
 
