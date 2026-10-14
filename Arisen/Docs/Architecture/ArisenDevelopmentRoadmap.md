@@ -195,9 +195,19 @@ Content ownership decides which package ships and cooks an asset, so it is recor
 left to folder layout.
 
 The migration that applies this rule to the gallery content - moving the demo fixtures out of
-`com.arisen.packagegame` and into `com.arisen.samples` - is recorded in
-`SamplesContentMigration.md` while it is in progress, including the derived world and scene
-identities it changes and the order its producers have to run in.
+`com.arisen.packagegame` and into `com.arisen.samples` - has landed: the fixtures and the tests
+that pin their identities live with `com.arisen.samples`, both fixture generators take the owning
+package as a parameter and default to it, and the local gates are green from the committed tree.
+Two things it taught are worth remembering, because either one silently produces stale content
+rather than an error: a generated child re-keys when its owner changes, so an authored file that
+names one (a world naming a generated cell scene, a cell scene naming a baked cluster) has to be
+re-keyed by hand from the cook report; and a producer that only publishes beside its previous
+output leaves an unreachable second copy behind, which is why the scatter generator now prunes
+generated directories it can prove it no longer owns.
+
+What is still open is the D7 shape: the gallery package is currently mounted by the base package
+list so every profile boots the migrated content, and Track S below is what moves it behind a
+`Samples` profile of its own.
 
 - Every asset is owned by exactly one package. Generated child assets derive their GUID from the
   source GUID, the owning package id, the child kind, and the child key

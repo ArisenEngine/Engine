@@ -153,6 +153,8 @@ No dedicated lint command or repo-local static-analysis script was found in the 
 - The main generated outputs live under workspace-local `.arisen/`, especially:
   - `.arisen\Projects\{Profile}\`
   - `.arisen\bin\{Profile}\{Configuration}\`
+- `Arisen\Com.Arisen.Rendering.Tests` compiles the core asset sources from an explicit `Compile Include` list, so a new file under `com.arisen.core\Assets` has to be added there or the test project stops compiling. The core `Automation`/`Memory`, `dag`, `taskgraph`, `vegetation`, and `terrain` sources are globbed by contrast; `generic-renderpipeline` is listed one file at a time.
+- A package is referenced by a profile only through the workspace `manifest.json`; a data-only package (no `type`, `entry`, `subsystems`, or `nativeRuntimes` in its `package.json`) has no project to generate and is therefore absent from every profile solution.
 
 ## Big-picture architecture
 
