@@ -784,8 +784,12 @@ public static class EngineBootstrapper
         KernelLog.Info("[Host] Runtime diagnostics:");
         KernelLog.InfoFormat("  Workspace: {0}", workspacePath);
         KernelLog.InfoFormat("  Profile: {0}", profile);
-        KernelLog.InfoFormat("  StartupTargetSource: {0}", startupTargetOptions.Specified ? "arguments" : "manifest");
-        KernelLog.InfoFormat("  StartupTarget: {0}", startupTargetOptions.Resolve(projectSubsystem.ActiveProject).Describe());
+        KernelLog.InfoFormat(
+            "  StartupTargetSource: {0}",
+            startupTargetOptions.Specified ? "arguments" : "profile/manifest");
+        KernelLog.InfoFormat(
+            "  StartupTarget: {0}",
+            DescribeStartupTarget(projectSubsystem, profile, startupTargetOptions));
         KernelLog.InfoFormat("  SmokeMode: {0}", smokeOptions.Enabled);
         KernelLog.InfoFormat("  SmokeKind: {0}", smokeOptions.Enabled ? smokeOptions.ModeName : "<none>");
         KernelLog.InfoFormat("  SmokeFramesRequested: {0}", smokeOptions.Enabled ? smokeOptions.RequestedFrameCount : 0);
@@ -823,6 +827,29 @@ public static class EngineBootstrapper
                 service.ContractName,
                 service.ImplementationName,
                 string.IsNullOrWhiteSpace(service.ProviderPackageId) ? "<kernel>" : service.ProviderPackageId);
+        }
+    }
+
+    /// <summary>
+    /// Diagnostics must describe a broken startup declaration rather than crash on it; the boot
+    /// itself fails loudly where the target is activated.
+    /// </summary>
+    private static string DescribeStartupTarget(
+        ProjectSubsystem projectSubsystem,
+        string profile,
+        StartupTargetOptions startupTargetOptions)
+    {
+        ProjectManifest? manifest = projectSubsystem.ActiveProject;
+        ProfileDefinition? profileDefinition = null;
+        manifest?.Profiles?.TryGetValue(profile, out profileDefinition);
+
+        try
+        {
+            return startupTargetOptions.Resolve(manifest, profileDefinition).Describe();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return $"<invalid: {ex.Message}>";
         }
     }
 

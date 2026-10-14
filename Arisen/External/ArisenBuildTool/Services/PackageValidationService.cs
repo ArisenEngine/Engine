@@ -95,6 +95,8 @@ public static class PackageValidationService
                         "packages for discovery without initializing game subsystems.");
                 }
 
+                ValidateProfileStartupTarget(manifest, profileDefinition, profile, result);
+
                 foreach (var package in profileDefinition.Packages ?? new List<PackageRequirement>())
                 {
                     EnqueueRequirement(
@@ -232,6 +234,52 @@ public static class PackageValidationService
         return result;
     }
 
+    /// <summary>
+    /// A profile selects at most one startup target, and a sample id is only resolvable when the
+    /// workspace declares the catalogue it comes from.
+    /// </summary>
+    private static void ValidateProfileStartupTarget(
+        ProjectManifest manifest,
+        ProfileDefinition profileDefinition,
+        string profile,
+        PackageValidationResult result)
+    {
+        bool sceneDeclared = profileDefinition.StartupScene != null;
+        bool worldDeclared = profileDefinition.StartupWorld != null;
+        bool sampleDeclared = !string.IsNullOrWhiteSpace(profileDefinition.StartupSample);
+        int declared = (sceneDeclared ? 1 : 0) + (worldDeclared ? 1 : 0) + (sampleDeclared ? 1 : 0);
+        if (declared > 1)
+        {
+            result.Errors.Add(
+                $"Profile '{profile}' declares more than one startup target. A profile selects one " +
+                "scene, one world, or one sample id.");
+            return;
+        }
+
+        if (sceneDeclared &&
+            (profileDefinition.StartupScene!.Guid == Guid.Empty ||
+             string.IsNullOrWhiteSpace(profileDefinition.StartupScene.PackageId)))
+        {
+            result.Errors.Add(
+                $"Profile '{profile}' StartupScene requires both a valid Guid and PackageId.");
+        }
+
+        if (worldDeclared &&
+            (profileDefinition.StartupWorld!.Guid == Guid.Empty ||
+             string.IsNullOrWhiteSpace(profileDefinition.StartupWorld.PackageId)))
+        {
+            result.Errors.Add(
+                $"Profile '{profile}' StartupWorld requires both a valid Guid and PackageId.");
+        }
+
+        if (sampleDeclared && manifest.SampleCatalogue == null)
+        {
+            result.Errors.Add(
+                $"Profile '{profile}' selects startup sample '{profileDefinition.StartupSample}', " +
+                "so the workspace must declare SampleCatalogue.");
+        }
+    }
+
     private static void ValidateWorkspaceManifest(ProjectManifest manifest, PackageValidationResult result)
     {
         if (string.IsNullOrWhiteSpace(manifest.Name))
@@ -296,6 +344,27 @@ public static class PackageValidationService
             {
                 result.Errors.Add(
                     $"Workspace manifest RenderPipeline package '{manifest.RenderPipeline.PackageId}' is not selected in the base Packages list.");
+            }
+        }
+
+        if (manifest.SampleCatalogue != null)
+        {
+            if (manifest.SampleCatalogue.Guid == Guid.Empty)
+            {
+                result.Errors.Add("Workspace manifest SampleCatalogue is missing a valid Guid.");
+            }
+
+            if (string.IsNullOrWhiteSpace(manifest.SampleCatalogue.PackageId))
+            {
+                result.Errors.Add("Workspace manifest SampleCatalogue is missing PackageId.");
+            }
+            else if (!manifest.Packages.Any(package => string.Equals(
+                         package.Id,
+                         manifest.SampleCatalogue.PackageId,
+                         StringComparison.OrdinalIgnoreCase)))
+            {
+                result.Errors.Add(
+                    $"Workspace manifest SampleCatalogue package '{manifest.SampleCatalogue.PackageId}' is not selected in the base Packages list.");
             }
         }
     }

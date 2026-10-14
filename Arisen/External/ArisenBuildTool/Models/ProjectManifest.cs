@@ -24,6 +24,15 @@ public class ProfileDefinition
     public bool IsTestHost { get; set; } = false;
 
     public bool EnableProfiler { get; set; } = false;
+
+    /// <summary>
+    /// The startup target this profile's product boots with. A profile declares at most one target;
+    /// a profile that declares none boots the workspace-level startup identity.
+    /// </summary>
+    public ProjectAssetReference? StartupScene { get; set; }
+    public ProjectAssetReference? StartupWorld { get; set; }
+    public string? StartupSample { get; set; }
+
     public List<PackageRequirement> Packages { get; set; } = new();
 }
 
@@ -48,6 +57,7 @@ public class ProjectManifest
     public ProjectAssetReference? StartupScene { get; set; }
     public ProjectAssetReference? StartupWorld { get; set; }
     public ProjectAssetReference? RenderPipeline { get; set; }
+    public ProjectAssetReference? SampleCatalogue { get; set; }
     public List<PackageRequirement> Packages { get; set; } = new();
     public Dictionary<string, ProfileDefinition>? Profiles { get; set; }
 }

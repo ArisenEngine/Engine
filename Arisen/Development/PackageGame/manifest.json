@@ -19,6 +19,12 @@
     "Guid": "460f2aa8-4a28-43a4-abae-ff32034ae10a",
     "PackageId": "com.arisen.generic-renderpipeline"
   },
+  // The gallery's catalogue: sample ids resolve through it, both for a direct
+  // `--startup-sample` launch and for the hub's browsing layer.
+  "SampleCatalogue": {
+    "Guid": "3e7a91d2-5c48-4b02-9f6d-81b4c0e5a2d7",
+    "PackageId": "com.arisen.samples"
+  },
   "Packages": [
     {
       "Id": "com.arisen.packagegame",
@@ -171,6 +177,38 @@
         {
           "Id": "com.arisen.testrunner",
           "Url": "file://Local/com.arisen.testrunner",
+          "Version": "1.0.0"
+        }
+      ]
+    },
+    "Samples": {
+      // The gallery profile: the shell plus the sample catalogue's content packages. The hub
+      // scene is the default boot; a sample is selected per process with --startup-sample.
+      "IsEditor": false,
+      "EnableProfiler": false,
+      "StartupScene": {
+        "Guid": "8c4d0a71-6e2b-4f53-8a1d-9b7c25e4f018",
+        "PackageId": "com.arisen.samples"
+      },
+      "Packages": [
+        {
+          "Id": "com.arisen.app",
+          "Url": "file://Local/com.arisen.app",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.samples",
+          "Url": "file://Local/com.arisen.samples",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation",
+          "Url": "file://Local/com.arisen.vegetation",
+          "Version": "1.0.0"
+        },
+        {
+          "Id": "com.arisen.vegetation.generic-renderpipeline",
+          "Url": "file://Local/com.arisen.vegetation.generic-renderpipeline",
           "Version": "1.0.0"
         }
       ]

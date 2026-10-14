@@ -242,6 +242,15 @@ ran as one Development workspace booting the manifest's MistfallValley world, La
 (`--startup-scene`), with a malformed value and an uncooked world both failing the boot with exit
 code 1.
 
+**S1 has landed.** `com.arisen.samples` owns the catalogue (`Assets\Catalogue\ShowcaseSamples.arisensamples`,
+an `.arisensamples` `SampleCatalogue` asset) and the hub scene; the workspace manifest selects the
+catalogue by GUID and the new `Samples` profile boots the hub. A profile may declare its own
+startup target, and `--startup-sample <id>` boots a catalogue entry directly - the shell resolves
+the id through the catalogue, and the cook follows the same selection, so a cooked-only profile
+boots the sample without a source fallback. The gate ran as one Samples workspace booting the hub,
+booting the `mistfall-valley` entry's world, and failing loudly (exit code 1) on an unknown id.
+What remains of Track S: the hub's browsing layer (S5) and the per-sample gate runners (S4).
+
 **Motivation.** Capability has no catalogue today. A profile decides the package graph at boot, so a
 capability can only be seen by knowing which workspace, profile, and solution to launch.
 

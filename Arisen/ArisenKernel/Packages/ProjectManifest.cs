@@ -49,10 +49,39 @@ public class ProjectManifest
     /// Package-owned render-pipeline settings asset selected for this workspace.
     /// </summary>
     public ProjectAssetReference? RenderPipeline { get; set; }
-    
+
+    /// <summary>
+    /// Package-owned sample catalogue selected for this workspace. A profile that selects a sample
+    /// by id (`--startup-sample`) and a hub that browses the gallery both resolve through it.
+    /// </summary>
+    public ProjectAssetReference? SampleCatalogue { get; set; }
+
+    /// <summary>
+    /// Profile declarations. A profile may select the startup target of its own product; profiles
+    /// that declare nothing boot the workspace-level <see cref="StartupScene"/>/<see cref="StartupWorld"/>.
+    /// </summary>
+    public Dictionary<string, ProfileDefinition>? Profiles { get; set; }
+
     /// <summary>
     /// List of package requirements for this project.
     /// </summary>
     public List<PackageRequirement> Packages { get; set; } = new();
+}
+
+/// <summary>
+/// The startup target a profile's product boots with. A profile declares at most one target
+/// (scene, world, or sample id); the process selects it by profile instead of editing the
+/// workspace-level startup identity.
+/// </summary>
+public class ProfileDefinition
+{
+    public ProjectAssetReference? StartupScene { get; set; }
+
+    public ProjectAssetReference? StartupWorld { get; set; }
+
+    /// <summary>
+    /// Id of a catalogue entry the profile boots, resolved through the workspace's sample catalogue.
+    /// </summary>
+    public string? StartupSample { get; set; }
 }
 
