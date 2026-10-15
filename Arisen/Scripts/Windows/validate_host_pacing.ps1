@@ -173,10 +173,20 @@ Add-Type -Namespace ArisenHostPacing -Name NativeMethods -MemberDefinition @"
 # not refresh on its own. The Editor profile reads source assets and Production ships cooked ones.
 if ($Profile -ieq "Development") {
     Write-Host "[Arisen] Cooking runtime assets for $Profile."
+    # The cook's own diagnostics are the only record of why it failed, so they are kept beside the
+    # gate's artifact instead of being discarded by the pipeline.
+    $cookLogPath = Join-Path $validationLogDir "host-pacing-$Profile-cook.log"
     Push-Location $binDir
     try {
-        & $exePath --arisen-cook-runtime-assets --workspace $workspaceDir --profile $Profile --configuration $Configuration --runtime-identifier win-x64 | Out-Null
-        Assert-Condition ($LASTEXITCODE -eq 0) "Runtime asset cooking for $Profile failed with exit code $LASTEXITCODE."
+        & $exePath --arisen-cook-runtime-assets --workspace $workspaceDir --profile $Profile --configuration $Configuration --runtime-identifier win-x64 *> $cookLogPath
+        $cookExitCode = $LASTEXITCODE
+        if ($cookExitCode -ne 0) {
+            $cookTail = @(Get-Content -LiteralPath $cookLogPath -Tail 20 -ErrorAction SilentlyContinue)
+            foreach ($line in $cookTail) {
+                Write-Host $line
+            }
+        }
+        Assert-Condition ($cookExitCode -eq 0) "Runtime asset cooking for $Profile failed with exit code $cookExitCode. Cook log: $cookLogPath."
     }
     finally {
         Pop-Location
