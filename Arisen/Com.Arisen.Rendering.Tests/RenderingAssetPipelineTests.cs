@@ -3528,7 +3528,8 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(MeshAssetCooker.SkinnedMeshVertexStride, cooked.VertexStride);
         Assert.Equal(80u, cooked.VertexStride);
         Assert.Equal(2u, cooked.JointCount);
-        Assert.Equal(80u + 3 * MeshAssetCooker.SkinnedMeshVertexStride + 3 * sizeof(uint) + MeshAssetCooker.SubmeshStride, cooked.SkinDataOffset);
+        // The skin block follows the 92-byte header, the vertices, the indices, and the submeshes.
+        Assert.Equal(92u + 3 * MeshAssetCooker.SkinnedMeshVertexStride + 3 * sizeof(uint) + MeshAssetCooker.SubmeshStride, cooked.SkinDataOffset);
         Assert.Equal(2 * MeshAssetCooker.SkinJointStride, cooked.SkinDataSize);
         Assert.Equal(new Vector3(0, 0, 0), cooked.Bounds.Min);
         Assert.Equal(new Vector3(1, 1, 0), cooked.Bounds.Max);
