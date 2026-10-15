@@ -587,6 +587,22 @@ try {
     # scatter recipe. The gate therefore pins the shipped species identities and the regional
     # scale, and derives the per-cell cluster/page structure from the deployed catalog instead of
     # a hand-written table for a single cell.
+    #
+    # The cooked mesh payload version belongs to the renderer's cooker, not to this script: it moved
+    # to the skinned payload when C1 added the skeleton block, and a pinned copy here would have
+    # silently accepted a catalog produced by the older format until a re-cook refreshed the cache.
+    # Reading the declared version keeps the identity pin honest across payload changes.
+    $meshAssetSourcePath = Join-Path $workspaceRootPath "Local/com.arisen.rendering/Resources/MeshAsset.cs"
+    if (-not (Test-Path -LiteralPath $meshAssetSourcePath -PathType Leaf)) {
+        throw "Cooked mesh payload source is missing for the mesh format pin: $meshAssetSourcePath."
+    }
+    $meshFormatMatch = [regex]::Match(
+        (Get-Content -LiteralPath $meshAssetSourcePath -Raw),
+        "CookedFormatVersion\s*=\s*(?<version>\d+)\s*;")
+    if (-not $meshFormatMatch.Success) {
+        throw "Cooked mesh payload version could not be read from '$meshAssetSourcePath'."
+    }
+    $meshFormatVersion = [int]$meshFormatMatch.Groups["version"].Value
     $vegetationBiomeGuid = "c0a92f10-0eb9-4d24-b729-7d0f38313001"
     $vegetationSpecies = @(
         [pscustomobject]@{
@@ -636,7 +652,7 @@ try {
             -PackageId "com.arisen.samples" `
             -AssetType "Mesh" `
             -Variant "staticmesh.uint32" `
-            -FormatVersion 4
+            -FormatVersion $meshFormatVersion
         $vegetationArtifacts["$($species.Name)Material"] = Get-ExactCatalogArtifact `
             -Artifacts @($catalog.artifacts) `
             -Guid $species.Material `
