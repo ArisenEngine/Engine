@@ -4766,11 +4766,84 @@ public sealed class RenderingAssetPipelineTests
         var bytes = db.GetCookedAssetBytes(cooked.Handle);
         Assert.True(cooked.HasSkin);
 
+        // A skinned node's own transform is ignored by the format; the cooked bounds have to be the
+        // source vertices' own bounds, not a space the skeleton does not share.
+        if (Path.GetFileName(sourcePath) == "CesiumMan.glb")
+        {
+            Assert.True(
+                (cooked.Bounds.Min - new Vector3(-0.131f, -0.569f, 0.0f)).Length() <= 1.0e-2f &&
+                (cooked.Bounds.Max - new Vector3(0.181f, 0.569f, 1.507f)).Length() <= 1.0e-2f,
+                $"Cooked bounds [{cooked.Bounds.Min} .. {cooked.Bounds.Max}] are not the source's " +
+                "[-0.131,-0.569,0 .. 0.181,0.569,1.507]; the cook moved skinned vertices into another space.");
+        }
+
         MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
         var jointGlobals = new Matrix4x4[skin.Joints.Count];
         MeshSkinPalette.ComputeJointGlobals(skin, jointGlobals);
         var palette = new Matrix4x4[skin.Joints.Count];
         MeshSkinPalette.ComputeSkinningMatrices(skin, jointGlobals, palette);
+
+        // Every joint's inverse bind matrix has to be the inverse of its composed rest global; this
+        // names the first joints that disagree instead of only the vertex they stretch.
+        var inconsistent = new List<string>();
+        for (int joint = 0; joint < skin.Joints.Count && inconsistent.Count < 4; joint++)
+        {
+            if (!Matrix4x4.Invert(jointGlobals[joint], out Matrix4x4 inverted))
+            {
+                inconsistent.Add($"{joint}: rest global is singular");
+                continue;
+            }
+
+            float deviation =
+                MathF.Abs(inverted.M11 - skin.Joints[joint].InverseBind.M11) +
+                MathF.Abs(inverted.M12 - skin.Joints[joint].InverseBind.M12) +
+                MathF.Abs(inverted.M13 - skin.Joints[joint].InverseBind.M13) +
+                MathF.Abs(inverted.M14 - skin.Joints[joint].InverseBind.M14) +
+                MathF.Abs(inverted.M21 - skin.Joints[joint].InverseBind.M21) +
+                MathF.Abs(inverted.M22 - skin.Joints[joint].InverseBind.M22) +
+                MathF.Abs(inverted.M23 - skin.Joints[joint].InverseBind.M23) +
+                MathF.Abs(inverted.M24 - skin.Joints[joint].InverseBind.M24) +
+                MathF.Abs(inverted.M31 - skin.Joints[joint].InverseBind.M31) +
+                MathF.Abs(inverted.M32 - skin.Joints[joint].InverseBind.M32) +
+                MathF.Abs(inverted.M33 - skin.Joints[joint].InverseBind.M33) +
+                MathF.Abs(inverted.M34 - skin.Joints[joint].InverseBind.M34) +
+                MathF.Abs(inverted.M41 - skin.Joints[joint].InverseBind.M41) +
+                MathF.Abs(inverted.M42 - skin.Joints[joint].InverseBind.M42) +
+                MathF.Abs(inverted.M43 - skin.Joints[joint].InverseBind.M43) +
+                MathF.Abs(inverted.M44 - skin.Joints[joint].InverseBind.M44);
+            if (deviation > 1.0e-3f)
+            {
+                Matrix4x4 bind = skin.Joints[joint].InverseBind;
+                Matrix4x4 rest = jointGlobals[joint];
+                var transposed = new Matrix4x4(
+                    bind.M11, bind.M21, bind.M31, bind.M41,
+                    bind.M12, bind.M22, bind.M32, bind.M42,
+                    bind.M13, bind.M23, bind.M33, bind.M43,
+                    bind.M14, bind.M24, bind.M34, bind.M44);
+                if (joint <= 1)
+                {
+                    inconsistent.Add(
+                        $"joint {joint} 3x3: inverse(rest)=[{inverted.M11:0.###},{inverted.M12:0.###},{inverted.M13:0.###} " +
+                        $"{inverted.M21:0.###},{inverted.M22:0.###},{inverted.M23:0.###} " +
+                        $"{inverted.M31:0.###},{inverted.M32:0.###},{inverted.M33:0.###}] " +
+                        $"IBM=[{bind.M11:0.###},{bind.M12:0.###},{bind.M13:0.###} {bind.M21:0.###},{bind.M22:0.###},{bind.M23:0.###} " +
+                        $"{bind.M31:0.###},{bind.M32:0.###},{bind.M33:0.###}] " +
+                        $"restLocalRot=[{skin.Joints[joint].LocalRotation.X:0.###},{skin.Joints[joint].LocalRotation.Y:0.###}," +
+                        $"{skin.Joints[joint].LocalRotation.Z:0.###},{skin.Joints[joint].LocalRotation.W:0.###}]");
+                }
+                inconsistent.Add(
+                    $"{joint}(parent {skin.Joints[joint].ParentIndex}): differ {deviation:0.####}; " +
+                    $"inverse(rest) T=[{inverted.M41:0.###},{inverted.M42:0.###},{inverted.M43:0.###}] " +
+                    $"IBM T=[{bind.M41:0.###},{bind.M42:0.###},{bind.M43:0.###}] " +
+                    $"IBMᵀ T=[{transposed.M41:0.###},{transposed.M42:0.###},{transposed.M43:0.###}] " +
+                    $"rest T=[{jointGlobals[joint].M41:0.###},{jointGlobals[joint].M42:0.###},{jointGlobals[joint].M43:0.###}]");
+            }
+        }
+
+        Assert.True(
+            inconsistent.Count == 0,
+            $"Cooking '{Path.GetFileName(sourcePath)}' left joints whose rest global is not the inverse of " +
+            $"their bind matrix: {string.Join(" | ", inconsistent)}");
 
         var vertices = new ReadOnlySpan<byte>(bytes.Span.ToArray()).Slice(
             checked((int)cooked.VertexDataOffset),
