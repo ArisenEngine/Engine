@@ -32,10 +32,12 @@ Arisen is a package-centric microkernel game engine under construction.
 
 Recorded here because this roadmap is requirement-driven, and these gaps decide the ordering.
 
-- Skeletal animation, animation clips, and GPU skinning: none. glTF `skins` now cook into an
-  optional rest-pose skeleton block with a stride-80 joint/weight vertex layout and a CPU reference
-  palette, but the render path still draws skinned meshes as static bind-pose geometry, and
-  `animations` remain an explicit import warning.
+- Skeletal animation and animation clips: none. Skinning itself is in place - glTF `skins` cook into
+  an optional rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference
+  palette, and a GPU path that poses a rigged mesh (lit and shadowed) from an entity's
+  `SkeletonPoseComponent`, with the gallery's `character-skinning` sample as its live proof. What has
+  no runtime yet is the clip side: no clip asset, sampling, blending, or state machine drives those
+  joints, and glTF `animations` remain an explicit import warning.
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
@@ -163,9 +165,24 @@ The GPU side of C1 has landed too: `SkeletonPoseComponent` publishes per-entity 
 frame preparation builds a bindless skin palette block per skinned item, and a draw that carries a
 palette runs on a second pipeline for the same material compiled with the `SKINNED` keyword against
 the 80-byte vertex stride. Materials whose shader declares `#pragma shader_feature SKINNED` cook that
-variant at build time, so cooked-only profiles keep working. What remains of C1 is a bundled rigged
-sample that animates through this path and skinned shadow casters, which the shadow pass currently
-skips with an explicit diagnostic instead of drawing stride-80 vertices through the static pipeline.
+variant at build time, so cooked-only profiles keep working.
+
+**C1's sample has landed**: the gallery's `character-skinning` entry boots the showcase dummy on the
+floor of its own scene, and `com.arisen.samples` - managed for the first time, because a sample whose
+content has to move brings the driver that moves it - poses the figure's head and shoulders from
+elapsed time. The driver, `CharacterSkinningPoseSubsystem`, binds only the entity that renders the
+package's rigged mesh, and the joint count it writes is its contract with the cooked skeleton: every
+other sample and product sees an inert driver, and a broken pose fails loudly in the pipeline instead
+of silently drawing the wrong palette. The path runs on the `SKINNED` pipeline variant in a
+cooked-only launch, and the sample's own scene proves it in one frame - the figure stands with its
+arms at its sides instead of the authored T-pose.
+
+**Skinned shadow casters have landed** as C1's other remainder: the shadow pass no longer skips a
+skinned item. It keeps a second depth pipeline built from the depth shader's `SKINNED` variant, the
+frame allocates a palette block for every valid skinned item before the camera frustum culls it
+(because a caster is drawn from a cascade's frustum instead), and the pass is prepared after that
+block is uploaded, so a shadow follows the pose rather than the bind pose. What remains of C1 is
+C2's clip runtime.
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).
@@ -304,6 +321,11 @@ supersedes the previous content. `validate_runtime.bat` runs that scenario for t
 profiles and validates its summary; the gate ran as one Samples workspace switching hub ->
 `mistfall-valley` -> `lantern-world` with both loads observed through the deferred residency path
 and a clean drained shutdown.
+
+The gallery's `character-skinning` entry (C1) is a content sample whose subject is a rendering path
+rather than content alone: its driver ships in `com.arisen.samples` and its catalogue gate is the
+direct `--startup-sample` launch, which is what S4's per-sample gate runners still have to wrap so
+`validate_runtime.bat` launches it beside the profile gates.
 
 What remains of Track S: the hub's browsing layer (S5) and the per-sample gate runners (S4).
 
