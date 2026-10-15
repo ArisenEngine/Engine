@@ -171,10 +171,13 @@ from the authored meshes, which is where the explicit shapes are replaced.
 **D3's first slice has landed.** `CharacterController` is a scene component whose kinematic capsule
 bases on the entity's transform origin; the runtime drives it through the solver - it slides along
 blocked geometry, steps up low stairs, sticks to the floor, and integrates gravity while airborne -
-and maps camera-relative input onto it in interactive runs. `RayCastClosest` plus a sphere overlap
-answer the hit/hurt queries combat reads, and a native `PhysicsCharacterControllerTest` gates the
-controller path (fall, climb, wall block, slide, and both queries) while the `physics-settle`
-scenario requires every authored character to be grounded. What remains of Track D is cooked
+and maps camera-relative input onto it in interactive runs, with Space to jump. `RayCastClosest`
+plus a sphere overlap answer the hit/hurt queries combat reads, and a native
+`PhysicsCharacterControllerTest` gates the controller path (fall, climb, wall block, slide, jump,
+and both queries) while the `physics-settle` scenario requires every authored character to be
+grounded. Interactive runs are third person: the package publishes the character through the
+`IRuntimeViewTarget` kernel contract and the shell's camera follows it, orbiting under the right
+mouse button, with the follow pose in a pure unit-tested helper. What remains of Track D is cooked
 collision derived from the authored meshes (D2) and D4's ragdoll and cloth, which stays deferred;
 the combat-facing consumers of the queries belong to Track E.
 
