@@ -4641,6 +4641,135 @@ public sealed class RenderingAssetPipelineTests
             $"Expected {expected} but found {actual}.");
     }
 
+    [Fact]
+    public void MeshCooker_BakesGltfClipsAndSamplerBlendsLinearRotations()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var animationPath = workspace.WriteBinary("Assets/SkinnedAnimation.bin", CreateGltfAnimationBuffer());
+        var gltfPath = workspace.Write("Assets/Animated.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "animations": [
+                {
+                  "name": "Wave",
+                  "samplers": [ { "input": 6, "output": 7 } ],
+                  "channels": [ { "sampler": 0, "target": { "node": 1, "path": "rotation" } } ]
+                }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 },
+                { "uri": "{{Path.GetFileName(animationPath)}}", "byteLength": 60 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 },
+                { "buffer": 1, "byteOffset": 0, "byteLength": 12 },
+                { "buffer": 1, "byteOffset": 12, "byteLength": 48 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" },
+                { "bufferView": 6, "componentType": 5126, "count": 3, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 7, "componentType": 5126, "count": 3, "type": "VEC4" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/GltfAnimated", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+
+        Assert.True(cooked.HasSkin);
+        Assert.True(cooked.HasAnimations);
+        Assert.Equal(1u, cooked.AnimationCount);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        MeshAnimationTable table = MeshAnimationTable.Read(bytes.Span, cooked);
+        MeshAnimationClip clip = Assert.Single(table.Clips);
+        Assert.Equal("Wave", clip.Name);
+        Assert.Equal(1.0f, clip.Duration, 3);
+        MeshAnimationJointTrack track = clip.GetTrack(0);
+        Assert.Equal(1, track.JointIndex);
+        Assert.Equal(new[] { 0.0f, 0.5f, 1.0f }, track.Times);
+
+        // The clip animates the second cooked joint; the first keeps its cooked rest rotation, and a
+        // sample past the duration wraps, which is what the sample's driver relies on.
+        Span<Quaternion> pose = stackalloc Quaternion[2];
+        MeshAnimationSampler.SamplePose(skin, table, 0, 0.25f, pose);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.3826834f, 0.9238795f), pose[1]);
+        Assert.Equal(skin.Joints[0].LocalRotation, pose[0]);
+
+        MeshAnimationSampler.SamplePose(skin, table, 0, 1.5f, pose);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), pose[1]);
+    }
+
+    private static void AssertQuaternionNear(Quaternion expected, Quaternion actual, float tolerance = 1.0e-5f)
+    {
+        Assert.True(
+            MathF.Abs(expected.X - actual.X) <= tolerance &&
+            MathF.Abs(expected.Y - actual.Y) <= tolerance &&
+            MathF.Abs(expected.Z - actual.Z) <= tolerance &&
+            MathF.Abs(expected.W - actual.W) <= tolerance,
+            $"Expected {expected} but found {actual}.");
+    }
+
+    private static byte[] CreateGltfAnimationBuffer()
+    {
+        var bytes = new byte[60];
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(0, sizeof(float)), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(4, sizeof(float)), 0.5f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(8, sizeof(float)), 1.0f);
+        WriteQuaternion(bytes, 12, Quaternion.Identity);
+        WriteQuaternion(bytes, 28, Quaternion.Normalize(new Quaternion(0, 0, 0.7071068f, 0.7071068f)));
+        WriteQuaternion(bytes, 44, Quaternion.Identity);
+        return bytes;
+    }
+
+    private static void WriteQuaternion(byte[] bytes, int offset, Quaternion value)
+    {
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset, sizeof(float)), value.X);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset + 4, sizeof(float)), value.Y);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset + 8, sizeof(float)), value.Z);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset + 12, sizeof(float)), value.W);
+    }
+
     private static byte[] CreateGltfSkinnedTriangleBuffer()
     {
         var bytes = new byte[266];

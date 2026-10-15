@@ -229,6 +229,54 @@ def main() -> int:
             node["children"] = children
         nodes.append(node)
 
+    # The pack's clips are authored against this skeleton, so they travel with the mesh: their
+    # channels keep the node identities above, their referenced accessors are copied into the new
+    # binary chunk, and a channel whose target node did not survive is dropped.
+    copied_accessors: dict[int, int] = {}
+
+    def copy_accessor(index: int, with_extents: bool = False) -> int:
+        if index in copied_accessors:
+            return copied_accessors[index]
+        accessor = root["accessors"][index]
+        new_index = append_vec_accessor(
+            accessor["componentType"],
+            accessor["type"],
+            source.read_accessor(index),
+            min_max=with_extents or "min" in accessor)
+        copied_accessors[index] = new_index
+        return new_index
+
+    animations: list = []
+    for animation in root.get("animations", []):
+        samplers: list = []
+        sampler_remap: dict[int, int] = {}
+        channels: list = []
+        for channel in animation["channels"]:
+            node = channel["target"]["node"]
+            if node not in remap:
+                continue
+            source_sampler = channel["sampler"]
+            if source_sampler not in sampler_remap:
+                sampler = animation["samplers"][source_sampler]
+                sampler_remap[source_sampler] = len(samplers)
+                copied = {
+                    "input": copy_accessor(sampler["input"], with_extents=True),
+                    "output": copy_accessor(sampler["output"]),
+                }
+                if "interpolation" in sampler:
+                    copied["interpolation"] = sampler["interpolation"]
+                samplers.append(copied)
+            channels.append({
+                "sampler": sampler_remap[source_sampler],
+                "target": {"node": remap[node], "path": channel["target"]["path"]},
+            })
+        if channels:
+            animations.append({
+                "name": animation.get("name", ""),
+                "samplers": samplers,
+                "channels": channels,
+            })
+
     joint_remap = [remap[joint] for joint in joint_nodes]
     mesh = {
         "name": f"{args.name}_Skinned",
@@ -260,6 +308,8 @@ def main() -> int:
         "bufferViews": buffer_views,
         "accessors": accessors,
     }
+    if animations:
+        document["animations"] = animations
 
     json_bytes = json.dumps(document, separators=(",", ":")).encode("utf-8")
     while len(json_bytes) % 4:

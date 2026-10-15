@@ -32,12 +32,14 @@ Arisen is a package-centric microkernel game engine under construction.
 
 Recorded here because this roadmap is requirement-driven, and these gaps decide the ordering.
 
-- Skeletal animation and animation clips: none. Skinning itself is in place - glTF `skins` cook into
-  an optional rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference
-  palette, and a GPU path that poses a rigged mesh (lit and shadowed) from an entity's
-  `SkeletonPoseComponent`, with the gallery's `character-skinning` sample as its live proof. What has
-  no runtime yet is the clip side: no clip asset, sampling, blending, or state machine drives those
-  joints, and glTF `animations` remain an explicit import warning.
+- Skeletal animation: skinning and clip playback are in place - glTF `skins` cook into an optional
+  rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference palette, and a
+  GPU path that poses a rigged mesh (lit and shadowed) from an entity's `SkeletonPoseComponent`, and a
+  mesh's payload now also bakes its source's clips as per-joint rotation keys that a runtime samples
+  by name, with the gallery's `character-skinning` sample playing the imported pack's clips. What has
+  no runtime yet is everything above one clip: no blending, no state machine, no root motion, no
+  translation or scale tracks, and no clip asset kind of its own (clips ride the mesh that owns the
+  skeleton they animate).
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
@@ -187,8 +189,22 @@ stands with its arms at its sides instead of the imported T-pose, and its shadow
 skinned item. It keeps a second depth pipeline built from the depth shader's `SKINNED` variant, the
 frame allocates a palette block for every valid skinned item before the camera frustum culls it
 (because a caster is drawn from a cascade's frustum instead), and the pass is prepared after that
-block is uploaded, so a shadow follows the pose rather than the bind pose. What remains of C1 is
-C2's clip runtime.
+block is uploaded, so a shadow follows the pose rather than the bind pose.
+
+**C2's first slice has landed: clips.** A cooked mesh payload (version 6) carries an animation table
+beside its skeleton: the cook bakes each source clip's LINEAR rotation channels into per-joint key
+tracks in the cooked skeleton's order - a channel's node maps through the skin's slot map, so a clip
+animates the same skeleton the mesh cooked - and a clip is addressed by its name, which is why an
+imported pack's clips need no new asset kind or GUID table. `MeshAnimationTable` reads the table and
+`MeshAnimationSampler` fills a whole pose per frame (a joint without a track keeps the cooked rest
+rotation, and time wraps so a clip loops), which is exactly the array `SkeletonPoseComponent` and the
+skin palette already consume. What the payload does not carry yet is the rest of the source's channels:
+translation and scale tracks are counted and reported at cook time rather than silently dropped, and a
+non-LINEAR sampler is rejected instead of resampled. The gallery's `character-skinning` sample plays
+the imported pack's `Idle` -> `Walking_A` -> `Running_A` -> `Jump_Full_Short` -> `Cheer` sequence, and
+its deterministic gate is `MeshCooker_BakesGltfClipsAndSamplerBlendsLinearRotations`, which cooks a
+skinned source with a clip and asserts the baked table, the wrapped sample, and the rest fallback.
+What remains of C2 is blending, a state machine, root motion, and translation/scale tracks.
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).
