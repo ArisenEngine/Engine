@@ -167,15 +167,21 @@ palette runs on a second pipeline for the same material compiled with the `SKINN
 the 80-byte vertex stride. Materials whose shader declares `#pragma shader_feature SKINNED` cook that
 variant at build time, so cooked-only profiles keep working.
 
-**C1's sample has landed**: the gallery's `character-skinning` entry boots the showcase dummy on the
-floor of its own scene, and `com.arisen.samples` - managed for the first time, because a sample whose
-content has to move brings the driver that moves it - poses the figure's head and shoulders from
-elapsed time. The driver, `CharacterSkinningPoseSubsystem`, binds only the entity that renders the
-package's rigged mesh, and the joint count it writes is its contract with the cooked skeleton: every
-other sample and product sees an inert driver, and a broken pose fails loudly in the pipeline instead
-of silently drawing the wrong palette. The path runs on the `SKINNED` pipeline variant in a
-cooked-only launch, and the sample's own scene proves it in one frame - the figure stands with its
-arms at its sides instead of the authored T-pose.
+**C1's sample has landed**: the gallery's `character-skinning` entry boots an imported game character
+on the floor of its own scene, and `com.arisen.samples` - managed for the first time, because a sample
+whose content has to move brings the driver that moves it - poses its head and shoulders from elapsed
+time. The character is KayKit's CC0 *Adventurers* Knight: the pack's `.glb` becomes the single skinned
+mesh the mesh cook imports (one skin, one skinned node, a 41-joint rig with its IK and control bones,
+and the pack's gradient atlas as the material's base colour), which
+`Arisen/Scripts/Windows/prepare_kaykit_character.py` produces from the published pack. The pose bound
+moved with it: `SkeletonPoseComponent` carries 128 joints so an imported rig fits, and the driver
+composes its swing with the rig's imported rest rotations, because a pose replaces a joint's local
+rotation rather than adding to it. The driver, `CharacterSkinningPoseSubsystem`, binds only the entity
+that renders the character mesh, and the joint count it writes is its contract with the cooked
+skeleton: every other sample and product sees an inert driver, and a broken pose fails loudly in the
+pipeline instead of silently drawing the wrong palette. The path runs on the `SKINNED` pipeline
+variant in a cooked-only launch, and the sample's own scene proves it in one frame - the character
+stands with its arms at its sides instead of the imported T-pose, and its shadow follows.
 
 **Skinned shadow casters have landed** as C1's other remainder: the shadow pass no longer skips a
 skinned item. It keeps a second depth pipeline built from the depth shader's `SKINNED` variant, the
