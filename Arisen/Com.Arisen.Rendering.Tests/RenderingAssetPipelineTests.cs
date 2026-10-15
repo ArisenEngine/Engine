@@ -4741,6 +4741,64 @@ public sealed class RenderingAssetPipelineTests
         AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), pose[1]);
     }
 
+    /// <summary>
+    /// The invariant every skinned cook owes its consumers: skinning the cooked mesh with the cooked
+    /// skeleton at rest has to reproduce the vertices the source authored. It is what makes an
+    /// import generic - a skeleton under a rotated or translated non-joint ancestor (a Z-up root, an
+    /// armature node) must bake into the joint locals exactly once - and a violation shows up at
+    /// runtime as limbs stretched towards the origin instead of a modelling mistake.
+    /// </summary>
+    [Theory]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\Knight.glb")]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\CesiumMan.glb")]
+    public void MeshCooker_CookedSkeletonReproducesTheBindPose(string relativePath)
+    {
+        string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", relativePath));
+        Assert.True(File.Exists(sourcePath), $"The sample's mesh source is missing: {sourcePath}");
+
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        db.AddAsset(meshGuid, "Mesh", sourcePath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/Imported", MeshVariantKey.Default, MeshSourceFormat.GltfBinary);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        Assert.True(cooked.HasSkin);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        var jointGlobals = new Matrix4x4[skin.Joints.Count];
+        MeshSkinPalette.ComputeJointGlobals(skin, jointGlobals);
+        var palette = new Matrix4x4[skin.Joints.Count];
+        MeshSkinPalette.ComputeSkinningMatrices(skin, jointGlobals, palette);
+
+        var vertices = new ReadOnlySpan<byte>(bytes.Span.ToArray()).Slice(
+            checked((int)cooked.VertexDataOffset),
+            checked((int)cooked.VertexDataSize));
+        float worst = 0.0f;
+        int worstVertex = -1;
+        var joints = new int[4];
+        for (int vertex = 0; vertex < cooked.VertexCount; vertex++)
+        {
+            Vector3 authored = MeshSkinPalette.ReadCookedVertexPosition(vertices, cooked.VertexStride, vertex);
+            MeshSkinPalette.ReadCookedVertexJoints(vertices, cooked.VertexStride, vertex, joints);
+            Vector4 weights = MeshSkinPalette.ReadCookedVertexWeights(vertices, cooked.VertexStride, vertex);
+            Span<float> weightValues = stackalloc float[4] { weights.X, weights.Y, weights.Z, weights.W };
+            Vector3 skinned = MeshSkinPalette.SkinPosition(palette, authored, joints, weightValues);
+            float deviation = (skinned - authored).Length();
+            if (deviation > worst)
+            {
+                worst = deviation;
+                worstVertex = vertex;
+            }
+        }
+
+        Assert.True(
+            worst <= 1.0e-3f,
+            $"Cooking '{Path.GetFileName(sourcePath)}' moved vertex {worstVertex} by {worst:0.####} at rest; " +
+            "the cooked skeleton does not reproduce the source's bind pose.");
+    }
+
     private static void AssertQuaternionNear(Quaternion expected, Quaternion actual, float tolerance = 1.0e-5f)
     {
         Assert.True(
