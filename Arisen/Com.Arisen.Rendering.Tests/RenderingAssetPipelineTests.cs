@@ -2499,9 +2499,22 @@ public sealed class RenderingAssetPipelineTests
             StringComparison.Ordinal);
         Assert.Contains(
             "#if USE_NORMAL_MAP\n" +
-            "                output.WorldTangent = TransformDirection(input.Tangent.xyz, objectData);\n" +
+            "                output.WorldTangent = TransformDirection(localTangent, objectData);\n" +
             "                output.TangentSign = input.Tangent.w;\n" +
             "#endif",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "#if SKINNED\n" +
+            "                uint4 Joints : TEXCOORD5;\n" +
+            "                float4 Weights : TEXCOORD6;\n" +
+            "#endif",
+            shaderText,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "#if SKINNED\n" +
+            "                {\n" +
+            "                    float4x4 skinMatrix = BuildSkinMatrix(input);\n",
             shaderText,
             StringComparison.Ordinal);
     }
@@ -2668,7 +2681,7 @@ public sealed class RenderingAssetPipelineTests
         Assert.Equal(
             new[] { MaterialPropertySlots.BaseColorFactor, MaterialPropertySlots.EmissiveFactor },
             shaderSource.MaterialContract.RequiredVector4Properties);
-        Assert.Equal(new[] { "USE_NORMAL_MAP", "ALPHA_TEST", "USE_TRIPLANAR" }, shaderSource.CompileTimeKeywords);
+        Assert.Equal(new[] { "USE_NORMAL_MAP", "ALPHA_TEST", "USE_TRIPLANAR", "SKINNED" }, shaderSource.CompileTimeKeywords);
         Assert.Equal(ECullModeFlagBits.CULL_MODE_BACK_BIT, shaderSource.RenderState.CullMode);
         Assert.False(shaderSource.RenderState.BlendEnabled);
 

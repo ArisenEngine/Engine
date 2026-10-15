@@ -157,8 +157,15 @@ import `JOINTS_0`/`WEIGHTS_0` with weights validated and renormalized, joint slo
 parents-first order, and inverse bind matrices preserved in mesh space. `MeshSkinPalette` is the CPU
 reference that reads the cooked skin, composes joint globals from the stored rest locals, and applies
 `inverseBind * jointGlobal` palettes; unit tests cover the round-trip, bind-pose invariance, a posed
-joint deformation, and every rejection rule. What remains of C1 is the GPU side: a skinning pipeline
-variant, a bindless palette, and a visible rigged sample.
+joint deformation, and every rejection rule.
+
+The GPU side of C1 has landed too: `SkeletonPoseComponent` publishes per-entity joint rotations,
+frame preparation builds a bindless skin palette block per skinned item, and a draw that carries a
+palette runs on a second pipeline for the same material compiled with the `SKINNED` keyword against
+the 80-byte vertex stride. Materials whose shader declares `#pragma shader_feature SKINNED` cook that
+variant at build time, so cooked-only profiles keep working. What remains of C1 is a bundled rigged
+sample that animates through this path and skinned shadow casters, which the shadow pass currently
+skips with an explicit diagnostic instead of drawing stride-80 vertices through the static pipeline.
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).
