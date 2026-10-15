@@ -4751,6 +4751,79 @@ public sealed class RenderingAssetPipelineTests
     [Theory]
     [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\Knight.glb")]
     [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\CesiumMan.glb")]
+    public void MeshCooker_AnimatedPoseStaysInsideTheAuthoredFigure(string relativePath)
+    {
+        string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", relativePath));
+        Assert.True(File.Exists(sourcePath), $"The sample's mesh source is missing: {sourcePath}");
+
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        db.AddAsset(meshGuid, "Mesh", sourcePath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/Imported", MeshVariantKey.Default, MeshSourceFormat.GltfBinary);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        MeshAnimationTable table = MeshAnimationTable.Read(bytes.Span, cooked);
+        if (table.ClipCount == 0)
+        {
+            return;
+        }
+
+        var vertices = new ReadOnlySpan<byte>(bytes.Span.ToArray()).Slice(
+            checked((int)cooked.VertexDataOffset),
+            checked((int)cooked.VertexDataSize));
+        Vector3 authoredSize = cooked.Bounds.Max - cooked.Bounds.Min;
+        float diagonal = authoredSize.Length();
+
+        // A pose that moves a vertex further outside the authored bounds than the figure is big is
+        // not a pose: it is a joint landing in the wrong frame, and it is what a stretched limb
+        // looks like from inside the pipeline.
+        var pose = new Quaternion[skin.Joints.Count];
+        var jointGlobals = new Matrix4x4[skin.Joints.Count];
+        var palette = new Matrix4x4[skin.Joints.Count];
+        var joints = new int[4];
+        var sampled = table.GetClip(0);
+        float worstOvershoot = 0.0f;
+        int worstVertex = -1;
+        float worstTime = -1.0f;
+        for (int step = 0; step <= 4; step++)
+        {
+            float time = sampled.Duration * step / 4.0f;
+            MeshAnimationSampler.SamplePose(skin, table, 0, time, pose);
+            MeshSkinPalette.ComputePalette(skin, pose, jointGlobals, palette);
+            for (int vertex = 0; vertex < cooked.VertexCount; vertex++)
+            {
+                Vector3 authored = MeshSkinPalette.ReadCookedVertexPosition(vertices, cooked.VertexStride, vertex);
+                MeshSkinPalette.ReadCookedVertexJoints(vertices, cooked.VertexStride, vertex, joints);
+                Vector4 weights = MeshSkinPalette.ReadCookedVertexWeights(vertices, cooked.VertexStride, vertex);
+                Span<float> weightValues = stackalloc float[4] { weights.X, weights.Y, weights.Z, weights.W };
+                Vector3 skinned = MeshSkinPalette.SkinPosition(palette, authored, joints, weightValues);
+                float overshoot = MathF.Max(
+                    MathF.Max(cooked.Bounds.Min.X - skinned.X, skinned.X - cooked.Bounds.Max.X),
+                    MathF.Max(
+                        MathF.Max(cooked.Bounds.Min.Y - skinned.Y, skinned.Y - cooked.Bounds.Max.Y),
+                        MathF.Max(cooked.Bounds.Min.Z - skinned.Z, skinned.Z - cooked.Bounds.Max.Z)));
+                if (overshoot > worstOvershoot)
+                {
+                    worstOvershoot = overshoot;
+                    worstVertex = vertex;
+                    worstTime = time;
+                }
+            }
+        }
+
+        Assert.True(
+            worstOvershoot <= diagonal * 0.5f,
+            $"Cooking '{Path.GetFileName(sourcePath)}': clip '{sampled.Name}' moved vertex {worstVertex} " +
+            $"{worstOvershoot:0.###} outside the authored bounds at t={worstTime:0.##}s " +
+            $"(figure diagonal {diagonal:0.###}); the sampled pose does not share the skeleton's frame.");
+    }
+
+    [Theory]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\Knight.glb")]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\CesiumMan.glb")]
     public void MeshCooker_CookedSkeletonReproducesTheBindPose(string relativePath)
     {
         string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", relativePath));
