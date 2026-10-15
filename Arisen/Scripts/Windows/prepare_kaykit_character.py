@@ -272,7 +272,9 @@ def main() -> int:
             })
         if channels:
             animations.append({
-                "name": animation.get("name", ""),
+                # A clip is addressed by name, so an unnamed source clip gets the name its index
+                # implies rather than failing the cook.
+                "name": animation.get("name", "") or f"Clip_{len(animations)}",
                 "samplers": samplers,
                 "channels": channels,
             })
@@ -321,7 +323,10 @@ def main() -> int:
     glb += struct.pack("<II", len(json_bytes), 0x4E4F534A) + json_bytes
     glb += struct.pack("<II", len(binary), 0x004E4942) + bytes(binary)
 
-    texture_name = f"{args.name}_BaseColor"
+    image = root.get("images", [{}])[0]
+    texture_extension = {"image/png": ".png", "image/jpeg": ".jpg"}.get(
+        image.get("mimeType", "image/png"), ".png")
+    texture_name = f"{args.name}_BaseColor{texture_extension}"
     texture_bytes = source.image_buffer_view_payload(0)
 
     # The mesh cook orders joints parents-first by bucketing each joint's *joint* ancestor depth and
@@ -341,7 +346,7 @@ def main() -> int:
 
     output_root = args.output_root
     mesh_path = output_root / "Meshes" / f"{args.name}.glb"
-    texture_path = output_root / "Textures" / f"{texture_name}.png"
+    texture_path = output_root / "Textures" / texture_name
     if not args.dry_run:
         mesh_path.parent.mkdir(parents=True, exist_ok=True)
         texture_path.parent.mkdir(parents=True, exist_ok=True)
