@@ -171,6 +171,25 @@ public sealed class CameraBasisContractTests
         Assert.Contains("eulerDegrees.X + (float)(lookDeltaY", editorCamera, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FollowCameraSharesTheYawAndPitchContract()
+    {
+        string runtimeCamera = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.app/Managed/RuntimeCameraNavigationSubsystem.cs");
+        string follow = ReadRepoFile(
+            "Arisen/Development/PackageGame/Local/com.arisen.app/Managed/RuntimeViewTargetCamera.cs");
+
+        // The follow path goes through the shared helper instead of re-deriving the orbit math.
+        Assert.Contains("RuntimeViewTargetCamera.ComputeFollowPose(", runtimeCamera, StringComparison.Ordinal);
+        Assert.Contains("RuntimeViewTargetCamera.ApplyLook(", runtimeCamera, StringComparison.Ordinal);
+
+        // The helper keeps the navigation conventions: wrapped yaw, pitch that grows downwards.
+        Assert.Contains("MathExtensions.WrapDegrees(", follow, StringComparison.Ordinal);
+        Assert.Contains("yawDegrees - deltaX", follow, StringComparison.Ordinal);
+        Assert.Contains("pitchDegrees + deltaY", follow, StringComparison.Ordinal);
+        Assert.Contains("CreateFromYawPitchRoll(", follow, StringComparison.Ordinal);
+    }
+
     private static Quaternion CreateRotation(float yawDegrees, float pitchDegrees, float rollDegrees) =>
         Quaternion.CreateFromYawPitchRoll(
             yawDegrees * RadiansPerDegree,

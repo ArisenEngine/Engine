@@ -198,6 +198,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueRuntimeAssetCooker.cs" Link="Source\Resources\Serialization\SampleCatalogueRuntimeAssetCooker.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleCatalogueService.cs" Link="Source\Resources\Serialization\SampleCatalogueService.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\Serialization\SampleSwitchSmokeScenario.cs" Link="Source\Resources\Serialization\SampleSwitchSmokeScenario.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.app\Managed\RuntimeViewTargetCamera.cs" Link="Source\App\RuntimeViewTargetCamera.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.resources\ResourcesPackage.cs" Link="Source\Resources\ResourcesPackage.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Assets\*.cs" Link="Source\Vegetation\Assets\%(Filename)%(Extension)" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.vegetation\Managed\Runtime\*.cs" Link="Source\Vegetation\Runtime\%(Filename)%(Extension)" />
