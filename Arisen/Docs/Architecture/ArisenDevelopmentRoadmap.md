@@ -37,8 +37,10 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
-  write-back, and a bounded settle gate. Cooked collision from authored meshes and the character
-  controller plus combat queries (D3) do not exist yet.
+  write-back, and a bounded settle gate. Characters reach it too: a kinematic controller capsule
+  that walks, steps, slides, and falls, driven by camera-relative input, with ray and sphere-overlap
+  hit/hurt queries. Cooked collision from authored meshes (D2's remainder) and combat consumers of
+  the queries do not exist yet.
 - Navigation and AI: none.
 - Audio: none.
 - Runtime in-game UI: none.
@@ -165,6 +167,16 @@ the world in fixed increments, writes the pose back into the entity transform, a
 with their entities. The `physics-settle` smoke scenario and `validate_runtime.bat` gate the wiring
 end to end for the profiles that mount the package. What remains of D2 is cooked collision derived
 from the authored meshes, which is where the explicit shapes are replaced.
+
+**D3's first slice has landed.** `CharacterController` is a scene component whose kinematic capsule
+bases on the entity's transform origin; the runtime drives it through the solver - it slides along
+blocked geometry, steps up low stairs, sticks to the floor, and integrates gravity while airborne -
+and maps camera-relative input onto it in interactive runs. `RayCastClosest` plus a sphere overlap
+answer the hit/hurt queries combat reads, and a native `PhysicsCharacterControllerTest` gates the
+controller path (fall, climb, wall block, slide, and both queries) while the `physics-settle`
+scenario requires every authored character to be grounded. What remains of Track D is cooked
+collision derived from the authored meshes (D2) and D4's ragdoll and cloth, which stays deferred;
+the combat-facing consumers of the queries belong to Track E.
 
 Acceptance gate: the track's first deliverable is a sample that boots the physics package alone
 (Priority Rule 5). It steps a fixed-timestep world holding a static floor and a character capsule,

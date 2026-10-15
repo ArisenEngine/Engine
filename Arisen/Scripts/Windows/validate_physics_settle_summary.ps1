@@ -43,16 +43,29 @@ try {
             "Physics-settle body never fell from its authored position: startY=$($body.startY), settledY=$($body.settledY)."
     }
 
+    # A scene character must be standing on the floor by the time the gate completes: the same
+    # component-to-solver-to-transform path the bodies use, proven for the character too.
+    $characters = @($artifact.characters)
+    Assert-Condition ($characters.Count -ge 1) `
+        "Physics-settle summary must observe at least one authored character."
+    foreach ($character in $characters) {
+        Assert-Condition ($character.grounded -eq $true) `
+            "Physics-settle character is not grounded (feetY=$($character.feetY))."
+        Assert-Condition ([Math]::Abs([double]$character.feetY) -le 0.1) `
+            "Physics-settle character is not standing on the floor: feetY=$($character.feetY)."
+    }
+
     # The solver world must be gone once the process shut down; a live world here is a leaked
     # simulation, not a gating curiosity.
     Assert-Condition ([int]$artifact.livePhysicsWorldsAfterShutdown -eq 0) `
         "Physics-settle shutdown left $($artifact.livePhysicsWorldsAfterShutdown) physics world(s) alive."
 
     $successTemplate =
-        "[Arisen] Physics-settle summary passed: profile={0}, bodies={1}, frames={2}, output={3}"
+        "[Arisen] Physics-settle summary passed: profile={0}, bodies={1}, characters={2}, frames={3}, output={4}"
     $successMessage = $successTemplate -f
         $ExpectedProfile,
         $bodies.Count,
+        $characters.Count,
         $artifact.frames,
         $path
     Write-Host $successMessage
