@@ -32,8 +32,10 @@ Arisen is a package-centric microkernel game engine under construction.
 
 Recorded here because this roadmap is requirement-driven, and these gaps decide the ordering.
 
-- Skeletal animation, skinning, animation clips: none. glTF `skins` and `animations` are explicit
-  import warnings, and the mesh vertex layout carries no joints or weights.
+- Skeletal animation, animation clips, and GPU skinning: none. glTF `skins` now cook into an
+  optional rest-pose skeleton block with a stride-80 joint/weight vertex layout and a CPU reference
+  palette, but the render path still draws skinned meshes as static bind-pose geometry, and
+  `animations` remain an explicit import warning.
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
@@ -145,6 +147,18 @@ discipline, Tracy and RenderDoc, validation gates, single-source documentation.
 - C2 clips, blending, state machine, root motion
 - C3 inverse kinematics and foot placement
 - C4 animation authoring tools
+
+**C1's asset slice has landed.** Cooked mesh payload version 5 carries an optional skeleton block:
+`MeshSkinJoint` records store the parent index, the local rest transform, and the inverse bind
+matrix, joints are ordered parents-first, and skinned vertices append four `uint8` joint indices and
+four `float` weights as an 80-byte stride that already references the cooked joint order. `MeshSkin`
+is authored in `.armesh` through `joint`, `ibm`, `joints`, and `weights` lines, and glTF `skins`
+import `JOINTS_0`/`WEIGHTS_0` with weights validated and renormalized, joint slots remapped into
+parents-first order, and inverse bind matrices preserved in mesh space. `MeshSkinPalette` is the CPU
+reference that reads the cooked skin, composes joint globals from the stored rest locals, and applies
+`inverseBind * jointGlobal` palettes; unit tests cover the round-trip, bind-pose invariance, a posed
+joint deformation, and every rejection rule. What remains of C1 is the GPU side: a skinning pipeline
+variant, a bindless palette, and a visible rigged sample.
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).

@@ -3472,6 +3472,443 @@ public sealed class RenderingAssetPipelineTests
     }
 
     [Fact]
+    public void GltfModelImportPlanner_ReportsSkinningImportState()
+    {
+        using var workspace = TestWorkspace.Create();
+        var gltfPath = workspace.Write("Assets/SkinnedModel.gltf", """
+            {
+              "asset": { "version": "2.0" },
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": { "POSITION": 0, "JOINTS_0": 1, "WEIGHTS_0": 2 }
+                    }
+                  ]
+                }
+              ],
+              "skins": [ { "joints": [0] } ],
+              "nodes": [ { "name": "Root" } ]
+            }
+            """);
+
+        var plan = GltfModelImportPlanner.CreatePlan(gltfPath, Guid.NewGuid(), "com.arisen.test");
+
+        Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("skins are not imported", StringComparison.Ordinal));
+        Assert.Contains(plan.Warnings, warning => warning.Contains("rest-pose skeleton", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void MeshCooker_WritesParentsFirstSkinPayloadForArmesh()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = WriteSkinnedArmesh(workspace);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/SkinnedTriangle", MeshVariantKey.Default);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+
+        Assert.True(cooked.HasSkin);
+        Assert.Equal(MeshAssetCooker.SkinnedMeshVertexStride, cooked.VertexStride);
+        Assert.Equal(80u, cooked.VertexStride);
+        Assert.Equal(2u, cooked.JointCount);
+        Assert.Equal(80u + 3 * MeshAssetCooker.SkinnedMeshVertexStride + 3 * sizeof(uint) + MeshAssetCooker.SubmeshStride, cooked.SkinDataOffset);
+        Assert.Equal(2 * MeshAssetCooker.SkinJointStride, cooked.SkinDataSize);
+        Assert.Equal(new Vector3(0, 0, 0), cooked.Bounds.Min);
+        Assert.Equal(new Vector3(1, 1, 0), cooked.Bounds.Max);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        Assert.Equal(2, skin.Joints.Count);
+        Assert.Equal(-1, skin.Joints[0].ParentIndex);
+        Assert.Equal(0, skin.Joints[1].ParentIndex);
+        Assert.Equal(new Vector3(0, 0, 0), skin.Joints[0].LocalTranslation);
+        Assert.Equal(new Vector3(0, 1, 0), skin.Joints[1].LocalTranslation);
+        Assert.Equal(Matrix4x4.Identity, skin.Joints[0].InverseBind);
+        Assert.Equal(Matrix4x4.CreateTranslation(0, -1, 0), skin.Joints[1].InverseBind);
+
+        var vertexData = bytes.Span.Slice(checked((int)cooked.VertexDataOffset), checked((int)cooked.VertexDataSize));
+        Span<int> joints = stackalloc int[4];
+        MeshSkinPalette.ReadCookedVertexJoints(vertexData, cooked.VertexStride, 0, joints);
+        Assert.Equal(new[] { 1, 0, 0, 0 }, joints.ToArray());
+        Assert.Equal(new Vector4(1, 0, 0, 0), MeshSkinPalette.ReadCookedVertexWeights(vertexData, cooked.VertexStride, 0));
+        MeshSkinPalette.ReadCookedVertexJoints(vertexData, cooked.VertexStride, 1, joints);
+        Assert.Equal(new[] { 0, 0, 0, 0 }, joints.ToArray());
+        Assert.Equal(new Vector3(0, 1, 0), MeshSkinPalette.ReadCookedVertexPosition(vertexData, cooked.VertexStride, 0));
+    }
+
+    [Fact]
+    public void MeshSkinPalette_LeavesBindPoseUnchangedAndDeformsPosedJoint()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = WriteSkinnedArmesh(workspace);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/SkinnedTriangle", MeshVariantKey.Default);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+
+        var jointGlobals = new Matrix4x4[skin.Joints.Count];
+        var palette = new Matrix4x4[skin.Joints.Count];
+        MeshSkinPalette.ComputeJointGlobals(skin, jointGlobals);
+        MeshSkinPalette.ComputeSkinningMatrices(skin, jointGlobals, palette);
+
+        Span<int> bindJoints = stackalloc int[4] { 1, 0, 0, 0 };
+        Span<float> bindWeights = stackalloc float[4] { 1.0f, 0.0f, 0.0f, 0.0f };
+        AssertVector3Equal(
+            new Vector3(0, 1, 0),
+            MeshSkinPalette.SkinPosition(palette, new Vector3(0, 1, 0), bindJoints, bindWeights));
+
+        jointGlobals[1] =
+            Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI * 0.5f)) *
+            Matrix4x4.CreateTranslation(0, 1, 0);
+        MeshSkinPalette.ComputeSkinningMatrices(skin, jointGlobals, palette);
+
+        AssertVector3Equal(
+            new Vector3(0, 2, 0),
+            MeshSkinPalette.SkinPosition(palette, new Vector3(1, 1, 0), bindJoints, bindWeights));
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsSkinWeightsWithoutSkeleton()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/WeightOnly.armesh", """
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            joints 0 0 0 0
+            weights 1 0 0 0
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/WeightOnly", MeshVariantKey.Default);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("declares no skeleton", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsSkeletonWithoutVertexWeights()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/NoWeights.armesh", """
+            joint -1 0 0 0 0 0 0 1
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/NoWeights", MeshVariantKey.Default);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("weights on every vertex", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsChildJointDeclaredBeforeParent()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/OutOfOrder.armesh", """
+            joint 1 0 1 0 0 0 0 1
+            joint -1 0 0 0 0 0 0 1
+            joints 0 0 0 0
+            weights 1 0 0 0
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/OutOfOrder", MeshVariantKey.Default);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("parents-first", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsVertexJointOutsideSkeleton()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/BadJointIndex.armesh", """
+            joint -1 0 0 0 0 0 0 1
+            joints 3 0 0 0
+            weights 1 0 0 0
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/BadJointIndex", MeshVariantKey.Default);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("references joint 3", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsWeightsThatDoNotSumToOne()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = workspace.Write("Assets/BadWeights.armesh", """
+            joint -1 0 0 0 0 0 0 1
+            joints 0 0 0 0
+            weights 0.5 0.5 0.5 0
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/BadWeights", MeshVariantKey.Default);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("must sum to 1", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_ImportsGltfSkinAndRemapsVertexJointsParentsFirst()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var gltfPath = workspace.Write("Assets/Skinned.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/GltfSkinned", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+
+        Assert.True(cooked.HasSkin);
+        Assert.Equal(80u, cooked.VertexStride);
+        Assert.Equal(2u, cooked.JointCount);
+        Assert.Equal(new Vector3(0, 1, 0), cooked.Bounds.Min);
+        Assert.Equal(new Vector3(1, 2, 0), cooked.Bounds.Max);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        Assert.Equal(2, skin.Joints.Count);
+        Assert.Equal(-1, skin.Joints[0].ParentIndex);
+        Assert.Equal(new Vector3(0, 0, 0), skin.Joints[0].LocalTranslation);
+        Assert.Equal(0, skin.Joints[1].ParentIndex);
+        Assert.Equal(new Vector3(0, 1, 0), skin.Joints[1].LocalTranslation);
+        Assert.Equal(Matrix4x4.Identity, skin.Joints[0].InverseBind);
+        Assert.Equal(Matrix4x4.CreateTranslation(0, -1, 0), skin.Joints[1].InverseBind);
+
+        var vertexData = bytes.Span.Slice(checked((int)cooked.VertexDataOffset), checked((int)cooked.VertexDataSize));
+        Span<int> joints = stackalloc int[4];
+        MeshSkinPalette.ReadCookedVertexJoints(vertexData, cooked.VertexStride, 0, joints);
+        Assert.Equal(new[] { 1, 1, 1, 1 }, joints.ToArray());
+        Assert.Equal(new Vector4(1, 0, 0, 0), MeshSkinPalette.ReadCookedVertexWeights(vertexData, cooked.VertexStride, 0));
+        Assert.Equal(new Vector3(0, 1, 0), MeshSkinPalette.ReadCookedVertexPosition(vertexData, cooked.VertexStride, 0));
+        MeshSkinPalette.ReadCookedVertexJoints(vertexData, cooked.VertexStride, 1, joints);
+        Assert.Equal(new[] { 0, 0, 0, 0 }, joints.ToArray());
+
+        var jointGlobals = new Matrix4x4[skin.Joints.Count];
+        var palette = new Matrix4x4[skin.Joints.Count];
+        MeshSkinPalette.ComputeJointGlobals(skin, jointGlobals);
+        MeshSkinPalette.ComputeSkinningMatrices(skin, jointGlobals, palette);
+        AssertVector3Equal(
+            new Vector3(0, 1, 0),
+            MeshSkinPalette.SkinPosition(palette, new Vector3(0, 1, 0), joints, new[] { 1.0f, 0.0f, 0.0f, 0.0f }));
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsGltfSourcesMixingStaticAndSkinnedNodes()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var gltfPath = workspace.Write("Assets/MixedNodes.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2, 3] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 },
+                { "mesh": 0, "translation": [5, 0, 0] }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/MixedNodes", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        var error = Assert.Throws<NotSupportedException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("mixes static mesh node", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MeshCooker_RejectsGltfSkinWithoutSkinningAttributes()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Triangle.bin", CreateGltfTriangleBuffer(1.0f));
+        var gltfPath = workspace.Write("Assets/SkinWithoutAttributes.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 1] } ],
+              "nodes": [
+                { "translation": [0, 0, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [0] }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 114 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 24 },
+                { "buffer": 0, "byteOffset": 96, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 108, "byteLength": 6 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5126, "count": 3, "type": "VEC2" },
+                { "bufferView": 3, "componentType": 5121, "normalized": true, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5123, "count": 3, "type": "SCALAR" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2,
+                        "COLOR_0": 3
+                      },
+                      "indices": 4
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/SkinWithoutAttributes", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        var error = Assert.Throws<InvalidOperationException>(() => MeshAssetCooker.LoadOrCook(db, mesh));
+
+        Assert.Contains("lacks JOINTS_0/WEIGHTS_0", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MeshCooker_RecooksGltfWhenExternalBufferChanges()
     {
         using var workspace = TestWorkspace.Create();
@@ -4162,6 +4599,81 @@ public sealed class RenderingAssetPipelineTests
         }
 
         throw new FileNotFoundException($"Could not find repository file '{relativePath}'.");
+    }
+
+    private static string WriteSkinnedArmesh(TestWorkspace workspace)
+    {
+        return workspace.Write("Assets/Skinned.armesh", """
+            joint -1 0 0 0 0 0 0 1
+            ibm 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+            joint 0 0 1 0 0 0 0 1
+            ibm 1 0 0 0 0 1 0 0 0 0 1 0 0 -1 0 1
+            joints 1 0 0 0
+            weights 1 0 0 0
+            v 0 1 0 0 0 1 1 0 0 1 0 0 1 1 1
+            joints 0 0 0 0
+            weights 1 0 0 0
+            v 0 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            v 1 0 0 0 0 1 1 0 0 1 0 0 1 1 1
+            i 0 1 2
+            """);
+    }
+
+    private static void AssertVector3Equal(Vector3 expected, Vector3 actual, float tolerance = 1.0e-4f)
+    {
+        Assert.True(
+            MathF.Abs(expected.X - actual.X) <= tolerance &&
+            MathF.Abs(expected.Y - actual.Y) <= tolerance &&
+            MathF.Abs(expected.Z - actual.Z) <= tolerance,
+            $"Expected {expected} but found {actual}.");
+    }
+
+    private static byte[] CreateGltfSkinnedTriangleBuffer()
+    {
+        var bytes = new byte[266];
+        WriteVector3(bytes, 0, new Vector3(0, 1, 0));
+        WriteVector3(bytes, 12, new Vector3(1, 1, 0));
+        WriteVector3(bytes, 24, new Vector3(0, 2, 0));
+        WriteVector3(bytes, 36, new Vector3(0, 0, 1));
+        WriteVector3(bytes, 48, new Vector3(0, 0, 1));
+        WriteVector3(bytes, 60, new Vector3(0, 0, 1));
+        for (int vertex = 0; vertex < 3; vertex++)
+        {
+            byte jointSlot = vertex == 1 ? (byte)1 : (byte)0;
+            int jointsOffset = 72 + vertex * 4;
+            bytes[jointsOffset] = jointSlot;
+            bytes[jointsOffset + 1] = jointSlot;
+            bytes[jointsOffset + 2] = jointSlot;
+            bytes[jointsOffset + 3] = jointSlot;
+
+            int weightsOffset = 84 + vertex * 16;
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(weightsOffset, sizeof(float)), 1.0f);
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(weightsOffset + 4, sizeof(float)), 0.0f);
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(weightsOffset + 8, sizeof(float)), 0.0f);
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(weightsOffset + 12, sizeof(float)), 0.0f);
+        }
+
+        WriteMatrix4x4(bytes, 132, Matrix4x4.CreateTranslation(0, -1, 0));
+        WriteMatrix4x4(bytes, 196, Matrix4x4.Identity);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(260, sizeof(ushort)), 0);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(262, sizeof(ushort)), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(264, sizeof(ushort)), 2);
+        return bytes;
+    }
+
+    private static void WriteMatrix4x4(byte[] bytes, int offset, Matrix4x4 value)
+    {
+        Span<float> values = stackalloc float[16]
+        {
+            value.M11, value.M12, value.M13, value.M14,
+            value.M21, value.M22, value.M23, value.M24,
+            value.M31, value.M32, value.M33, value.M34,
+            value.M41, value.M42, value.M43, value.M44
+        };
+        for (int i = 0; i < values.Length; i++)
+        {
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset + i * sizeof(float), sizeof(float)), values[i]);
+        }
     }
 
     private static byte[] CreateGltfTriangleBuffer(float scale)

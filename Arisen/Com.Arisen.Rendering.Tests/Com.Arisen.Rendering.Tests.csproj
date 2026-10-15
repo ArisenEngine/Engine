@@ -124,6 +124,7 @@
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MaterialAsset.cs" Link="Source\Rendering\Resources\MaterialAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MaterialSourceAssetEditor.cs" Link="Source\Rendering\Resources\MaterialSourceAssetEditor.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MeshAsset.cs" Link="Source\Rendering\Resources\MeshAsset.cs" />
+    <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\MeshSkinPalette.cs" Link="Source\Rendering\Resources\MeshSkinPalette.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ModelSourceAsset.cs" Link="Source\Rendering\Resources\ModelSourceAsset.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\ModelSourceReimporter.cs" Link="Source\Rendering\Resources\ModelSourceReimporter.cs" />
     <Compile Include="..\Development\PackageGame\Local\com.arisen.rendering\Resources\RenderingRuntimeAssetCooker.cs" Link="Source\Rendering\Resources\RenderingRuntimeAssetCooker.cs" />
