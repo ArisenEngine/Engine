@@ -5007,6 +5007,129 @@ public sealed class RenderingAssetPipelineTests
     }
 
     /// <summary>
+    /// The sampling primitive behind every transition: a cross-fade mixes the two clips' rotations
+    /// spherically and their translations linearly, lands exactly on either end, and treats a
+    /// missing outgoing clip as a plain sample.
+    /// </summary>
+    [Fact]
+    public void MeshAnimationSampler_CrossFadesTwoClips()
+    {
+        using var workspace = TestWorkspace.Create();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        (MeshSkin skin, MeshAnimationTable table) = CookBlendFixture(workspace, db);
+        Assert.Equal(2, table.ClipCount);
+        Assert.True(table.TryFindClip("Lift", out int lift));
+        Assert.True(table.TryFindClip("Lower", out int lower));
+
+        var rotations = new Quaternion[skin.Joints.Count];
+        var translations = new Vector3[skin.Joints.Count];
+
+        // Lift at 0.5 s holds 90 degrees and two units, Lower holds 45 degrees and 1.5 units; the
+        // half blend has to land exactly between them on both channels.
+        MeshAnimationSampler.SampleBlendedPose(skin, table, lift, 0.5f, lower, 0.5f, 0.5f, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.5555702f, 0.8314696f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1.75f, 0), translations[1]);
+
+        MeshAnimationSampler.SampleBlendedPose(skin, table, lift, 0.5f, lower, 0.5f, 1.0f, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.3826834f, 0.9238795f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1.5f, 0), translations[1]);
+
+        MeshAnimationSampler.SampleBlendedPose(skin, table, lift, 0.5f, lower, 0.5f, 0.0f, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 2, 0), translations[1]);
+
+        MeshAnimationSampler.SampleBlendedPose(skin, table, -1, 0.0f, lower, 0.5f, 0.5f, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.3826834f, 0.9238795f), rotations[1]);
+    }
+
+    /// <summary>
+    /// The player's timing contract: a looping clip wraps without completing, a one-shot clip clamps
+    /// on its last frame and reports completion exactly once, and playing an unknown name changes
+    /// nothing.
+    /// </summary>
+    [Fact]
+    public void MeshAnimationPlayer_LoopsAdvancesAndReportsCompletion()
+    {
+        using var workspace = TestWorkspace.Create();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        (MeshSkin skin, MeshAnimationTable table) = CookBlendFixture(workspace, db);
+
+        var player = new MeshAnimationPlayer(table);
+        Assert.False(player.IsPlaying);
+        Assert.True(player.TryPlay("Lift", 0.0f, loop: true));
+        Assert.True(player.IsPlaying);
+        Assert.False(player.IsFading);
+
+        player.Advance(0.5f);
+        Assert.False(player.CompletedThisFrame);
+        Assert.Equal(0.5f, player.CurrentTime, 3);
+        var rotations = new Quaternion[skin.Joints.Count];
+        var translations = new Vector3[skin.Joints.Count];
+        player.SamplePose(skin, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 2, 0), translations[1]);
+
+        // One more second wraps the looping clip: 0.5 + 0.7 s lands on 0.2 s (36 degrees, 1.8 units).
+        player.Advance(0.7f);
+        Assert.False(player.CompletedThisFrame);
+        Assert.Equal(0.2f, player.CurrentTime, 3);
+        player.SamplePose(skin, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.3090170f, 0.9510565f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1.8f, 0), translations[1]);
+
+        Assert.True(player.TryPlay("Lower", 0.0f, loop: false));
+        player.Advance(1.1f);
+        Assert.True(player.CompletedThisFrame);
+        Assert.Equal(1.0f, player.CurrentTime, 3);
+        player.SamplePose(skin, rotations, translations);
+        AssertQuaternionNear(Quaternion.Identity, rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1, 0), translations[1]);
+
+        // Completion fires once; further advances hold the last frame.
+        player.Advance(0.1f);
+        Assert.False(player.CompletedThisFrame);
+        Assert.Equal(1.0f, player.CurrentTime, 3);
+
+        Assert.False(player.TryPlay("missing", 0.0f, loop: true));
+        Assert.Equal(1.0f, player.CurrentTime, 3);
+    }
+
+    /// <summary>
+    /// A fade is a real cross-fade: both clips keep advancing while it runs, the midpoint mixes them
+    /// evenly on both channels, and the moment it elapses the incoming clip is sampled alone.
+    /// </summary>
+    [Fact]
+    public void MeshAnimationPlayer_CrossFadesBothClipsWhileAdvancing()
+    {
+        using var workspace = TestWorkspace.Create();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        (MeshSkin skin, MeshAnimationTable table) = CookBlendFixture(workspace, db);
+
+        var player = new MeshAnimationPlayer(table);
+        Assert.True(player.TryPlay("Lift", 0.0f, loop: true));
+        player.Advance(0.5f);
+
+        Assert.True(player.TryPlay("Lower", 0.4f, loop: true));
+        Assert.True(player.IsFading);
+        player.Advance(0.2f);
+
+        // Halfway through the fade both clips have kept advancing: Lift holds 0.7 s (54 degrees and
+        // 1.6 units) and Lower 0.2 s (72 degrees and 1.8 units); the blend lands at 63 degrees and
+        // 1.7 units.
+        var rotations = new Quaternion[skin.Joints.Count];
+        var translations = new Vector3[skin.Joints.Count];
+        player.SamplePose(skin, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.5224986f, 0.8526402f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1.7f, 0), translations[1]);
+
+        player.Advance(0.2f);
+        Assert.False(player.IsFading);
+        player.SamplePose(skin, rotations, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.4539905f, 0.8910065f), rotations[1]);
+        AssertVector3Equal(new Vector3(0, 1.6f, 0), translations[1]);
+    }
+
+    /// <summary>
     /// The invariant the translation cook exists for: the shipped rigs move their root - a walk's
     /// hip bob - and the cooked clip has to carry it as real per-key keys, not as rest transforms.
     /// </summary>
@@ -5319,6 +5442,130 @@ public sealed class RenderingAssetPipelineTests
         WriteVector3(bytes, 8, new Vector3(0, 3, 0));
         WriteVector3(bytes, 20, new Vector3(0, 3, 0));
         return bytes;
+    }
+
+    /// <summary>
+    /// The second clip of the blending fixture: a rotation swinging back from 90 degrees to rest and
+    /// a translation descending from two units to one, both LINEAR over 0..1 s.
+    /// </summary>
+    private static byte[] CreateGltfLowerTranslationAnimationBuffer()
+    {
+        var bytes = new byte[64];
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(0, sizeof(float)), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(4, sizeof(float)), 1.0f);
+        WriteQuaternion(bytes, 8, Quaternion.Normalize(new Quaternion(0, 0, 0.7071068f, 0.7071068f)));
+        WriteQuaternion(bytes, 24, Quaternion.Identity);
+        WriteVector3(bytes, 40, new Vector3(0, 2, 0));
+        WriteVector3(bytes, 52, new Vector3(0, 1, 0));
+        return bytes;
+    }
+
+    /// <summary>
+    /// Cooks the two-clip fixture every blending test shares: "Lift" (reaching 90 degrees and two
+    /// units at 0.5 s) and "Lower" (swinging back over 0..1 s), both animating the child joint.
+    /// </summary>
+    private static (MeshSkin Skin, MeshAnimationTable Table) CookBlendFixture(
+        TestWorkspace workspace,
+        TestAssetDatabase db)
+    {
+        var meshGuid = Guid.NewGuid();
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var liftPath = workspace.WriteBinary("Assets/SkinnedLift.bin", CreateGltfMergedTranslationAnimationBuffer());
+        var lowerPath = workspace.WriteBinary("Assets/SkinnedLower.bin", CreateGltfLowerTranslationAnimationBuffer());
+        var gltfPath = workspace.Write("Assets/LiftAndLower.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "animations": [
+                {
+                  "name": "Lift",
+                  "samplers": [
+                    { "input": 6, "output": 7 },
+                    { "input": 8, "output": 9 }
+                  ],
+                  "channels": [
+                    { "sampler": 0, "target": { "node": 1, "path": "rotation" } },
+                    { "sampler": 1, "target": { "node": 1, "path": "translation" } }
+                  ]
+                },
+                {
+                  "name": "Lower",
+                  "samplers": [
+                    { "input": 10, "output": 11 },
+                    { "input": 10, "output": 12 }
+                  ],
+                  "channels": [
+                    { "sampler": 0, "target": { "node": 1, "path": "rotation" } },
+                    { "sampler": 1, "target": { "node": 1, "path": "translation" } }
+                  ]
+                }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 },
+                { "uri": "{{Path.GetFileName(liftPath)}}", "byteLength": 124 },
+                { "uri": "{{Path.GetFileName(lowerPath)}}", "byteLength": 64 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 },
+                { "buffer": 1, "byteOffset": 0, "byteLength": 12 },
+                { "buffer": 1, "byteOffset": 12, "byteLength": 48 },
+                { "buffer": 1, "byteOffset": 60, "byteLength": 16 },
+                { "buffer": 1, "byteOffset": 76, "byteLength": 48 },
+                { "buffer": 2, "byteOffset": 0, "byteLength": 8 },
+                { "buffer": 2, "byteOffset": 8, "byteLength": 32 },
+                { "buffer": 2, "byteOffset": 40, "byteLength": 24 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" },
+                { "bufferView": 6, "componentType": 5126, "count": 3, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 7, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 8, "componentType": 5126, "count": 4, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 9, "componentType": 5126, "count": 4, "type": "VEC3" },
+                { "bufferView": 10, "componentType": 5126, "count": 2, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 11, "componentType": 5126, "count": 2, "type": "VEC4" },
+                { "bufferView": 12, "componentType": 5126, "count": 2, "type": "VEC3" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+        var mesh = new MeshAsset(meshGuid, "Tests/GltfBlend", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        return (MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked), MeshAnimationTable.Read(bytes.Span, cooked));
     }
 
     private static void WriteQuaternion(byte[] bytes, int offset, Quaternion value)

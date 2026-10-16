@@ -36,10 +36,10 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
   rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference palette, and a
   GPU path that poses a rigged mesh (lit and shadowed) from an entity's `SkeletonPoseComponent`, and a
   mesh's payload now also bakes its source's clips as per-joint rotation and translation keys that a
-  runtime samples by name, with the gallery's `character-skinning` sample playing an imported
-  character's clip. What has no runtime yet is everything above one clip: no blending, no state
-  machine, no root-motion application, no scale tracks, and no clip asset kind of its own (clips ride
-  the mesh that owns the skeleton they animate).
+  runtime samples by name and blends through a clip player, with the gallery's `character-skinning`
+  sample playing an imported character's clip. What has no runtime yet is everything above a timed
+  sequence: no parameter-driven state machine, no root-motion application, no scale tracks, and no
+  clip asset kind of its own (clips ride the mesh that owns the skeleton they animate).
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
@@ -208,12 +208,19 @@ dropped - and a non-LINEAR sampler is rejected instead of resampled. A joint who
 non-joint helper nodes folds those helpers' rest transforms - and their sampled rotations and
 translations when a clip drives them - into one joint-relative track at cook time, so a rig
 authored with wrapper or control chains composes the same pose the source animates. The gallery's
-`character-skinning` sample plays the imported figure's walk clip, and its deterministic gates are
+`character-skinning` sample plays the imported figure's walk clip. **Transitions are runtime
+capability, not driver code:** `MeshAnimationPlayer` plays one clip at a time with a real cross-fade
+into the next - both clips keep advancing, so a switch never freezes the pose it leaves - loops or
+clamps on completion and reports it once for a one-shot clip, and
+`MeshAnimationSampler.SampleBlendedPose` is the two-clip primitive under it, so the driver only picks
+clip names and timing policy. Its deterministic gates are
 `MeshCooker_MergesGltfTranslationTrackAndSamplerLerpsIt`,
 `MeshCooker_CollapsesConstantGltfTranslationTrack`, and
 `MeshCooker_KeepsTheShippedRigsRootBob`, which pins that both shipped rigs' bob survives the cook,
-beside the baked-table, animated-bounds, and bind-pose invariants. What remains of C2 is blending, a
-state machine, root-motion application, and scale tracks.
+beside `MeshAnimationSampler_CrossFadesTwoClips` and the player's timing and cross-fade tests, and
+the baked-table, animated-bounds, and bind-pose invariants. What remains of C2 is a parameter-driven
+state machine above the player (transitions with conditions, not a fixed timed sequence),
+root-motion application, and scale tracks.
 
 **The posed frame is verified end to end, and the sample's own gate runs it.** The skinned vertex shader rebuilt the uploaded palette
 from its four stored columns as if they were rows, transposing every joint's transform; identity
