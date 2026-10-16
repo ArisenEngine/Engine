@@ -24,6 +24,14 @@ $sampleSwitchSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.sampleSwitch.requested -eq $true -and $_.sampleSwitch.passed -eq $true -and $_.sampleSwitch.summaryPath } |
         ForEach-Object { [string]$_.sampleSwitch.summaryPath })
+$characterSkinningSummaryArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.characterSkinning.requested -eq $true -and $_.characterSkinning.passed -eq $true -and $_.characterSkinning.summaryPath } |
+        ForEach-Object { [string]$_.characterSkinning.summaryPath })
+$characterSkinningGateArtifactPaths = @(
+    $profiles |
+        Where-Object { $_.characterSkinning.requested -eq $true -and $_.characterSkinning.passed -eq $true -and $_.characterSkinning.gatePath } |
+        ForEach-Object { [string]$_.characterSkinning.gatePath })
 $physicsSettleSummaryArtifactPaths = @(
     $profiles |
         Where-Object { $_.physicsSettle.requested -eq $true -and $_.physicsSettle.passed -eq $true -and $_.physicsSettle.summaryPath } |
@@ -69,7 +77,7 @@ if ($env:EXIT_CODE -ne "0") {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 11
+    schemaVersion = 12
     capturedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repositoryRoot = $env:REPO_ROOT
     workspacePath = $env:WORKSPACE_DIR
@@ -96,6 +104,11 @@ $summary = [ordered]@{
     sampleSwitchSmokeRuns = [int]$env:SAMPLE_SWITCH_SMOKE_RUNS
     sampleSwitchSummaryArtifactCount = $sampleSwitchSummaryArtifactPaths.Count
     sampleSwitchSummaryArtifactPaths = $sampleSwitchSummaryArtifactPaths
+    characterSkinningSampleRuns = [int]$env:CHARACTER_SKINNING_SAMPLE_RUNS
+    characterSkinningSummaryArtifactCount = $characterSkinningSummaryArtifactPaths.Count
+    characterSkinningSummaryArtifactPaths = $characterSkinningSummaryArtifactPaths
+    characterSkinningGateArtifactCount = $characterSkinningGateArtifactPaths.Count
+    characterSkinningGateArtifactPaths = $characterSkinningGateArtifactPaths
     physicsSettleSmokeRuns = [int]$env:PHYSICS_SETTLE_SMOKE_RUNS
     physicsSettleSummaryArtifactCount = $physicsSettleSummaryArtifactPaths.Count
     physicsSettleSummaryArtifactPaths = $physicsSettleSummaryArtifactPaths

@@ -25,6 +25,7 @@ set "RELOCATED_PRODUCTION_SMOKE_RUNS=0"
 set "WORLD_STREAMING_SMOKE_RUNS=0"
 set "TERRAIN_STREAMING_SMOKE_RUNS=0"
 set "SAMPLE_SWITCH_SMOKE_RUNS=0"
+set "CHARACTER_SKINNING_SAMPLE_RUNS=0"
 set "PHYSICS_SETTLE_SMOKE_RUNS=0"
 set "VEGETATION_VISUAL_COMPARISON_RUNS=0"
 set "FAILURE_STAGE="
@@ -184,6 +185,7 @@ echo [Arisen] Relocated Production smoke runs: %RELOCATED_PRODUCTION_SMOKE_RUNS%
 echo [Arisen] World-streaming smoke runs: %WORLD_STREAMING_SMOKE_RUNS%
 echo [Arisen] Terrain-streaming smoke runs: %TERRAIN_STREAMING_SMOKE_RUNS%
 echo [Arisen] Sample-switch smoke runs: %SAMPLE_SWITCH_SMOKE_RUNS%
+echo [Arisen] Character-skinning sample runs: %CHARACTER_SKINNING_SAMPLE_RUNS%
 echo [Arisen] Physics-settle smoke runs: %PHYSICS_SETTLE_SMOKE_RUNS%
 echo [Arisen] Vegetation visual comparisons: %VEGETATION_VISUAL_COMPARISON_RUNS%
 set "EXIT_CODE=0"
@@ -320,6 +322,16 @@ set "CURRENT_SAMPLE_SWITCH_PASSED="
 set "CURRENT_SAMPLE_SWITCH_EXIT_CODE="
 set "CURRENT_SAMPLE_SWITCH_REQUIRED=0"
 if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_GALLERY!"=="1" set "CURRENT_SAMPLE_SWITCH_REQUIRED=1"
+set "CURRENT_CHARACTER_SKINNING_REQUESTED=0"
+set "CURRENT_CHARACTER_SKINNING_SUMMARY_PATH="
+set "CURRENT_CHARACTER_SKINNING_SECOND_PATH="
+set "CURRENT_CHARACTER_SKINNING_THIRD_PATH="
+set "CURRENT_CHARACTER_SKINNING_GATE_PATH="
+set "CURRENT_CHARACTER_SKINNING_LOG_PATH="
+set "CURRENT_CHARACTER_SKINNING_PASSED="
+set "CURRENT_CHARACTER_SKINNING_EXIT_CODE="
+set "CURRENT_CHARACTER_SKINNING_REQUIRED=0"
+if "!CURRENT_PROFILE_RUNTIME_GATES!"=="1" if "!CURRENT_PROFILE_GALLERY!"=="1" set "CURRENT_CHARACTER_SKINNING_REQUIRED=1"
 set "CURRENT_PHYSICS_SETTLE_REQUESTED=0"
 set "CURRENT_PHYSICS_SETTLE_SUMMARY_PATH="
 set "CURRENT_PHYSICS_SETTLE_LOG_PATH="
@@ -669,6 +681,25 @@ if "!CURRENT_SAMPLE_SWITCH_REQUIRED!"=="1" (
         exit /b 1
     )
     set /a SAMPLE_SWITCH_SMOKE_RUNS+=1
+)
+
+if "!CURRENT_CHARACTER_SKINNING_REQUIRED!"=="1" (
+    call :run_character_skinning_sample_gate
+    if errorlevel 1 (
+        echo [ERROR] Character-skinning sample gate failed for profile %CURRENT_PROFILE%.
+        set "FAILED_PROFILE=%CURRENT_PROFILE%"
+        set "FAILURE_STAGE=character-skinning sample gate"
+        set "FAILURE_MESSAGE=Character-skinning sample gate failed for profile %CURRENT_PROFILE%"
+        set "RESULT_PROFILE=%CURRENT_PROFILE%"
+        set "RESULT_STATUS=failed"
+        set "RESULT_REQUIRES_VULKAN=%PROFILE_REQUIRES_VULKAN%"
+        set "RESULT_EXIT_CODE=1"
+        set "RESULT_LOG_PATH=!CURRENT_CHARACTER_SKINNING_LOG_PATH!"
+        set "RESULT_MESSAGE=!FAILURE_MESSAGE!"
+        call :record_result
+        exit /b 1
+    )
+    set /a CHARACTER_SKINNING_SAMPLE_RUNS+=3
 )
 
 if "!CURRENT_PHYSICS_SETTLE_REQUIRED!"=="1" (
@@ -1159,6 +1190,100 @@ if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_sample_switch_summary.ps1" -SummaryPath "!CURRENT_SAMPLE_SWITCH_SUMMARY_PATH!" -ExpectedProfile "%CURRENT_PROFILE%"
 if errorlevel 1 exit /b 1
 set "CURRENT_SAMPLE_SWITCH_PASSED=1"
+exit /b 0
+
+:run_character_skinning_sample_gate
+rem The catalogue's character-skinning entry declares this gate: the sample is launched directly at
+rem three clip times, its captured frames must pass the standard visual checks, and the run's log
+rem must prove the driver bound the character, sampled its clip, and prepared the SKINNED pipeline
+rem from the cooked variant - with playback not parked. Three captures with at least two distinct
+rem frames make "the walk is actually painting" observable without depending on one machine's frame
+rem pacing.
+set "CURRENT_CHARACTER_SKINNING_REQUESTED=1"
+set "CURRENT_CHARACTER_SKINNING_SUMMARY_PATH=%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-latest.json"
+set "CURRENT_CHARACTER_SKINNING_SECOND_PATH=%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-advance-2-latest.json"
+set "CURRENT_CHARACTER_SKINNING_THIRD_PATH=%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-advance-3-latest.json"
+set "CURRENT_CHARACTER_SKINNING_GATE_PATH=%LOG_DIR%\character-skinning-gate-%CURRENT_PROFILE%-latest.json"
+set "CURRENT_CHARACTER_SKINNING_LOG_PATH=%LOG_DIR%\character-skinning-%CURRENT_PROFILE%-%CONFIG%-%RUN_TIMESTAMP%.log"
+set "CURRENT_CHARACTER_SKINNING_EXIT_CODE="
+set "CURRENT_CHARACTER_SKINNING_PASSED=0"
+del /q "!CURRENT_CHARACTER_SKINNING_SUMMARY_PATH!" "%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-latest.ppm" >nul 2>nul
+del /q "!CURRENT_CHARACTER_SKINNING_SECOND_PATH!" "%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-advance-2-latest.ppm" >nul 2>nul
+del /q "!CURRENT_CHARACTER_SKINNING_THIRD_PATH!" "%LOG_DIR%\visual-summary-%CURRENT_PROFILE%-character-skinning-advance-3-latest.ppm" >nul 2>nul
+del /q "!CURRENT_CHARACTER_SKINNING_GATE_PATH!" "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" >nul 2>nul
+
+call :prepare_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+echo [Arisen] Running bounded character-skinning sample gate: %EXE_PATH%
+call :prepare_player_log_snapshot "character-skinning"
+if errorlevel 1 exit /b 1
+set "CHARACTER_SKINNING_RUN_EXIT=0"
+pushd "%BIN_DIR%" >nul
+if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
+    "%EXE_PATH%" --startup-sample character-skinning --smoke-mode scene --frames 45 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_SUMMARY_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+) else (
+    "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --startup-sample character-skinning --smoke-mode scene --frames 45 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_SUMMARY_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+)
+set "CHARACTER_SKINNING_RUN_EXIT=!ERRORLEVEL!"
+popd >nul
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    call :resolve_player_log
+    if errorlevel 1 set "CHARACTER_SKINNING_RUN_EXIT=1"
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    call :prepare_player_log_snapshot "character-skinning"
+    if errorlevel 1 set "CHARACTER_SKINNING_RUN_EXIT=1"
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    pushd "%BIN_DIR%" >nul
+    if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
+        "%EXE_PATH%" --startup-sample character-skinning --smoke-mode scene --frames 71 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_SECOND_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+    ) else (
+        "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --startup-sample character-skinning --smoke-mode scene --frames 71 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_SECOND_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+    )
+    set "CHARACTER_SKINNING_RUN_EXIT=!ERRORLEVEL!"
+    popd >nul
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    call :resolve_player_log
+    if errorlevel 1 set "CHARACTER_SKINNING_RUN_EXIT=1"
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    call :prepare_player_log_snapshot "character-skinning"
+    if errorlevel 1 set "CHARACTER_SKINNING_RUN_EXIT=1"
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    pushd "%BIN_DIR%" >nul
+    if "!CURRENT_PROFILE_DEPLOYED!"=="1" (
+        "%EXE_PATH%" --startup-sample character-skinning --smoke-mode scene --frames 195 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_THIRD_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+    ) else (
+        "%EXE_PATH%" --workspace "%WORKSPACE_DIR%" --profile "%CURRENT_PROFILE%" --startup-sample character-skinning --smoke-mode scene --frames 195 --visual-summary --visual-summary-output "!CURRENT_CHARACTER_SKINNING_THIRD_PATH!" >> "!CURRENT_CHARACTER_SKINNING_LOG_PATH!" 2>&1
+    )
+    set "CHARACTER_SKINNING_RUN_EXIT=!ERRORLEVEL!"
+    popd >nul
+)
+if "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    call :resolve_player_log
+    if errorlevel 1 set "CHARACTER_SKINNING_RUN_EXIT=1"
+)
+if not "!CHARACTER_SKINNING_RUN_EXIT!"=="0" (
+    echo [ERROR] Character-skinning sample run failed with exit code !CHARACTER_SKINNING_RUN_EXIT!.
+    set "CURRENT_CHARACTER_SKINNING_EXIT_CODE=!CHARACTER_SKINNING_RUN_EXIT!"
+    exit /b 1
+)
+
+call :validate_vulkan_validation_log "%PROFILE_REQUIRES_VULKAN%"
+if errorlevel 1 exit /b 1
+call :validate_vulkan_player_log
+if errorlevel 1 exit /b 1
+call :validate_runtime_asset_policy
+if errorlevel 1 exit /b 1
+call :validate_runtime_shutdown_log
+if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_ROOT%validate_character_skinning_summary.ps1" -SummaryPath "!CURRENT_CHARACTER_SKINNING_SUMMARY_PATH!" -SecondSummaryPath "!CURRENT_CHARACTER_SKINNING_SECOND_PATH!" -ThirdSummaryPath "!CURRENT_CHARACTER_SKINNING_THIRD_PATH!" -PlayerLogPath "!CURRENT_PLAYER_LOG_PATH!" -GateSummaryPath "!CURRENT_CHARACTER_SKINNING_GATE_PATH!" -ExpectedProfile "%CURRENT_PROFILE%"
+if errorlevel 1 exit /b 1
+set "CURRENT_CHARACTER_SKINNING_PASSED=1"
+set "CURRENT_CHARACTER_SKINNING_EXIT_CODE=0"
 exit /b 0
 
 :run_physics_settle_smoke

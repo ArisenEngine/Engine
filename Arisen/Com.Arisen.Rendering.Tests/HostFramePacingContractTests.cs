@@ -170,7 +170,7 @@ public sealed class HostFramePacingContractTests
         Assert.Contains("hostPacingRuns = [int]$env:HOST_PACING_RUNS", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("hostPacingArtifactPaths = $hostPacingArtifactPaths", runtimeSummary, StringComparison.Ordinal);
         Assert.Contains("[int]$summary.hostPacingRuns -eq 1", stabilityStress, StringComparison.Ordinal);
-        Assert.Contains("[int]$summary.schemaVersion -eq 11", stabilityStress, StringComparison.Ordinal);
+        Assert.Contains("[int]$summary.schemaVersion -eq 12", stabilityStress, StringComparison.Ordinal);
     }
 
     private static string ReadSource(string relativePath)

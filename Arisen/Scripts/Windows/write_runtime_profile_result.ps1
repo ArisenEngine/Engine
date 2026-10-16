@@ -65,6 +65,16 @@ $result = [ordered]@{
         exitCode = Get-NullableInt $env:CURRENT_SAMPLE_SWITCH_EXIT_CODE
         passed = Get-NullableBool $env:CURRENT_SAMPLE_SWITCH_PASSED
     }
+    characterSkinning = [ordered]@{
+        requested = $env:CURRENT_CHARACTER_SKINNING_REQUESTED -eq "1"
+        summaryPath = Get-NullableString $env:CURRENT_CHARACTER_SKINNING_SUMMARY_PATH
+        secondSummaryPath = Get-NullableString $env:CURRENT_CHARACTER_SKINNING_SECOND_PATH
+        thirdSummaryPath = Get-NullableString $env:CURRENT_CHARACTER_SKINNING_THIRD_PATH
+        gatePath = Get-NullableString $env:CURRENT_CHARACTER_SKINNING_GATE_PATH
+        logPath = Get-NullableString $env:CURRENT_CHARACTER_SKINNING_LOG_PATH
+        exitCode = Get-NullableInt $env:CURRENT_CHARACTER_SKINNING_EXIT_CODE
+        passed = Get-NullableBool $env:CURRENT_CHARACTER_SKINNING_PASSED
+    }
     physicsSettle = [ordered]@{
         requested = $env:CURRENT_PHYSICS_SETTLE_REQUESTED -eq "1"
         summaryPath = Get-NullableString $env:CURRENT_PHYSICS_SETTLE_SUMMARY_PATH

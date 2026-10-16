@@ -65,8 +65,8 @@ function Read-AndValidateRuntimeSummary([string]$Path)
     Assert-Condition (Test-Path -LiteralPath $Path -PathType Leaf) `
         "Runtime validation summary was not produced: $Path"
     $summary = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
-    Assert-Condition ([int]$summary.schemaVersion -eq 11) `
-        "Runtime validation summary schema mismatch. Expected 11: $Path"
+    Assert-Condition ([int]$summary.schemaVersion -eq 12) `
+        "Runtime validation summary schema mismatch. Expected 12: $Path"
     Assert-Condition ($summary.succeeded -eq $true -and [int]$summary.exitCode -eq 0) `
         "Runtime validation summary reports failure: $Path"
     Assert-Condition ($summary.gpuAvailable -eq $true) `
@@ -104,6 +104,13 @@ function Read-AndValidateRuntimeSummary([string]$Path)
         "Runtime validation did not report exactly four profile results: $Path"
     Assert-Condition (@($profiles | Where-Object { $_.status -cne "passed" }).Count -eq 0) `
         "At least one runtime profile did not pass: $Path"
+    $galleryProfiles = @($profiles | Where-Object { $_.characterSkinning.requested -eq $true })
+    Assert-Condition (
+        [int]$summary.characterSkinningSampleRuns -eq (3 * $galleryProfiles.Count)) `
+        "Runtime validation did not execute the character-skinning sample gate for every gallery profile: $Path"
+    Assert-Condition (
+        (@($galleryProfiles | Where-Object { $_.characterSkinning.passed -ne $true }).Count -eq 0)) `
+        "A character-skinning sample gate did not pass: $Path"
     $vegetationProfiles = @($profiles | Where-Object {
         $_.vegetationVisualComparison.requested -eq $true
     })

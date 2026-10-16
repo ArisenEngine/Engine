@@ -210,13 +210,17 @@ and asserts the baked table, the wrapped sample, and the rest fallback, beside t
 animated-bounds invariants that cook the shipped rigs. What remains of C2 is blending, a state
 machine, root motion, and translation/scale tracks.
 
-**The posed frame is verified end to end.** The skinned vertex shader rebuilt the uploaded palette
+**The posed frame is verified end to end, and the sample's own gate runs it.** The skinned vertex shader rebuilt the uploaded palette
 from its four stored columns as if they were rows, transposing every joint's transform; identity
 palettes hid it at bind, so the invariant gates stayed green while every posed capture warped the
 figure. The lit shader and the skinned shadow shader now rebuild the matrix's rows from the stored
 columns, and a captured `character-skinning` frame matches an independent CPU evaluation of the
 source clip - the walk's upright stride replaces the folded-arms distortion in the eight-phase
-capture.
+capture. `validate_runtime`'s character-skinning gate launches the catalogue's entry directly at
+three clip times: every frame must pass the standard visual checks, at least two captured frames
+must differ, and the run's log must show the driver binding and sampling the character through the
+cooked `SKINNED` variant with playback not parked - the catalogue's `Gate`/`Artifact` fields name
+exactly that run (`character-skinning-gate-Samples-latest.json`).
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).
