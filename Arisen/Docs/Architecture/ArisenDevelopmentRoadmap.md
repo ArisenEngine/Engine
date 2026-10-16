@@ -36,7 +36,7 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
   rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference palette, and a
   GPU path that poses a rigged mesh (lit and shadowed) from an entity's `SkeletonPoseComponent`, and a
   mesh's payload now also bakes its source's clips as per-joint rotation keys that a runtime samples
-  by name, with the gallery's `character-skinning` sample playing the imported pack's clips. What has
+  by name, with the gallery's `character-skinning` sample playing an imported character's clip. What has
   no runtime yet is everything above one clip: no blending, no state machine, no root motion, no
   translation or scale tracks, and no clip asset kind of its own (clips ride the mesh that owns the
   skeleton they animate).
@@ -200,11 +200,23 @@ imported pack's clips need no new asset kind or GUID table. `MeshAnimationTable`
 rotation, and time wraps so a clip loops), which is exactly the array `SkeletonPoseComponent` and the
 skin palette already consume. What the payload does not carry yet is the rest of the source's channels:
 translation and scale tracks are counted and reported at cook time rather than silently dropped, and a
-non-LINEAR sampler is rejected instead of resampled. The gallery's `character-skinning` sample plays
-the imported pack's `Idle` -> `Walking_A` -> `Running_A` -> `Jump_Full_Short` -> `Cheer` sequence, and
-its deterministic gate is `MeshCooker_BakesGltfClipsAndSamplerBlendsLinearRotations`, which cooks a
-skinned source with a clip and asserts the baked table, the wrapped sample, and the rest fallback.
-What remains of C2 is blending, a state machine, root motion, and translation/scale tracks.
+non-LINEAR sampler is rejected instead of resampled. A joint whose node hangs under non-joint helper
+nodes folds those helpers' rest transforms - and their sampled rotations when a clip drives them -
+into one joint-relative track at cook time, so a rig authored with wrapper or control chains composes
+the same pose the source animates. The gallery's `character-skinning` sample plays the imported
+figure's walk clip, and its deterministic gate is
+`MeshCooker_BakesGltfClipsAndSamplerBlendsLinearRotations`, which cooks a skinned source with a clip
+and asserts the baked table, the wrapped sample, and the rest fallback, beside the bind-pose and
+animated-bounds invariants that cook the shipped rigs. What remains of C2 is blending, a state
+machine, root motion, and translation/scale tracks.
+
+**The posed frame is verified end to end.** The skinned vertex shader rebuilt the uploaded palette
+from its four stored columns as if they were rows, transposing every joint's transform; identity
+palettes hid it at bind, so the invariant gates stayed green while every posed capture warped the
+figure. The lit shader and the skinned shadow shader now rebuild the matrix's rows from the stored
+columns, and a captured `character-skinning` frame matches an independent CPU evaluation of the
+source clip - the walk's upright stride replaces the folded-arms distortion in the eight-phase
+capture.
 
 **Track D - Physics**: Jolt behind a package boundary (D3), vendored into `com.arisen.physics`
 (D18).

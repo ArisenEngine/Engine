@@ -3508,7 +3508,7 @@ public sealed class RenderingAssetPipelineTests
         var plan = GltfModelImportPlanner.CreatePlan(gltfPath, Guid.NewGuid(), "com.arisen.test");
 
         Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("skins are not imported", StringComparison.Ordinal));
-        Assert.Contains(plan.Warnings, warning => warning.Contains("rest-pose skeleton", StringComparison.Ordinal));
+        Assert.Contains(plan.Warnings, warning => warning.Contains("rotation clips", StringComparison.Ordinal));
     }
 
     [Fact]
