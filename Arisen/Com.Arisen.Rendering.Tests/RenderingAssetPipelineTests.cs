@@ -3508,7 +3508,7 @@ public sealed class RenderingAssetPipelineTests
         var plan = GltfModelImportPlanner.CreatePlan(gltfPath, Guid.NewGuid(), "com.arisen.test");
 
         Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("skins are not imported", StringComparison.Ordinal));
-        Assert.Contains(plan.Warnings, warning => warning.Contains("rotation clips", StringComparison.Ordinal));
+        Assert.Contains(plan.Warnings, warning => warning.Contains("rotation and translation clips", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -3586,6 +3586,52 @@ public sealed class RenderingAssetPipelineTests
         AssertVector3Equal(
             new Vector3(0, 2, 0),
             MeshSkinPalette.SkinPosition(palette, new Vector3(1, 1, 0), bindJoints, bindWeights));
+    }
+
+    /// <summary>
+    /// The palette's pose contract now covers translations as well: a supplied translation moves the
+    /// joint's vertices with it, while the rotations-only overload keeps the cooked rest translation
+    /// of every joint.
+    /// </summary>
+    [Fact]
+    public void MeshSkinPalette_AppliesPoseTranslationBesideRotation()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var meshPath = WriteSkinnedArmesh(workspace);
+        db.AddAsset(meshGuid, "Mesh", meshPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/SkinnedTriangle", MeshVariantKey.Default);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+
+        var jointGlobals = new Matrix4x4[skin.Joints.Count];
+        var palette = new Matrix4x4[skin.Joints.Count];
+        var poseRotations = new Quaternion[skin.Joints.Count];
+        var poseTranslations = new Vector3[skin.Joints.Count];
+        for (int jointIndex = 0; jointIndex < skin.Joints.Count; jointIndex++)
+        {
+            poseRotations[jointIndex] = skin.Joints[jointIndex].LocalRotation;
+            poseTranslations[jointIndex] = skin.Joints[jointIndex].LocalTranslation;
+        }
+
+        poseTranslations[1] += new Vector3(0, 2, 0);
+        MeshSkinPalette.ComputePalette(skin, poseRotations, poseTranslations, jointGlobals, palette);
+
+        Span<int> bindJoints = stackalloc int[4] { 1, 0, 0, 0 };
+        Span<float> bindWeights = stackalloc float[4] { 1.0f, 0.0f, 0.0f, 0.0f };
+        AssertVector3Equal(
+            new Vector3(0, 3, 0),
+            MeshSkinPalette.SkinPosition(palette, new Vector3(0, 1, 0), bindJoints, bindWeights));
+
+        // The rotations-only overload is the rest-translation contract: no pose translations, no
+        // lift.
+        MeshSkinPalette.ComputePalette(skin, poseRotations, jointGlobals, palette);
+        AssertVector3Equal(
+            new Vector3(0, 1, 0),
+            MeshSkinPalette.SkinPosition(palette, new Vector3(0, 1, 0), bindJoints, bindWeights));
     }
 
     [Fact]
@@ -4729,6 +4775,9 @@ public sealed class RenderingAssetPipelineTests
         MeshAnimationJointTrack track = clip.GetTrack(0);
         Assert.Equal(1, track.JointIndex);
         Assert.Equal(new[] { 0.0f, 0.5f, 1.0f }, track.Times);
+        // A joint with only rotation keys costs no translation data: it keeps its rest translation.
+        Assert.Equal(MeshAnimationTranslationMode.Rest, track.TranslationMode);
+        Assert.Null(track.KeyTranslations);
 
         // The clip animates the second cooked joint; the first keeps its cooked rest rotation, and a
         // sample past the duration wraps, which is what the sample's driver relies on.
@@ -4739,6 +4788,276 @@ public sealed class RenderingAssetPipelineTests
 
         MeshAnimationSampler.SamplePose(skin, table, 0, 1.5f, pose);
         AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), pose[1]);
+    }
+
+    /// <summary>
+    /// The translation half of the clip contract: a joint animated on both channels carries one
+    /// merged key timeline (the LINEAR keys interleave exactly), the merged rotation keys re-sample
+    /// the authored curve, the sampler lerps translations, and joints without translation keys keep
+    /// their cooked rest translation.
+    /// </summary>
+    [Fact]
+    public void MeshCooker_MergesGltfTranslationTrackAndSamplerLerpsIt()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var animationPath = workspace.WriteBinary("Assets/SkinnedLift.bin", CreateGltfMergedTranslationAnimationBuffer());
+        var gltfPath = workspace.Write("Assets/Lifted.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "animations": [
+                {
+                  "name": "Lift",
+                  "samplers": [
+                    { "input": 6, "output": 7 },
+                    { "input": 8, "output": 9 }
+                  ],
+                  "channels": [
+                    { "sampler": 0, "target": { "node": 1, "path": "rotation" } },
+                    { "sampler": 1, "target": { "node": 1, "path": "translation" } }
+                  ]
+                }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 },
+                { "uri": "{{Path.GetFileName(animationPath)}}", "byteLength": 124 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 },
+                { "buffer": 1, "byteOffset": 0, "byteLength": 12 },
+                { "buffer": 1, "byteOffset": 12, "byteLength": 48 },
+                { "buffer": 1, "byteOffset": 60, "byteLength": 16 },
+                { "buffer": 1, "byteOffset": 76, "byteLength": 48 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" },
+                { "bufferView": 6, "componentType": 5126, "count": 3, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 7, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 8, "componentType": 5126, "count": 4, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 9, "componentType": 5126, "count": 4, "type": "VEC3" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/GltfLifted", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        MeshAnimationTable table = MeshAnimationTable.Read(bytes.Span, cooked);
+        MeshAnimationClip clip = Assert.Single(table.Clips);
+        MeshAnimationJointTrack track = clip.GetTrack(0);
+        Assert.Equal(1, track.JointIndex);
+        Assert.Equal(MeshAnimationTranslationMode.PerKey, track.TranslationMode);
+
+        // The merged timeline carries every source key of both channels, and the rotation keys that
+        // had no authored key at 0.25 s re-sample the 45-degree midpoint of the LINEAR slerp.
+        Assert.Equal(new[] { 0.0f, 0.25f, 0.5f, 1.0f }, track.Times);
+        AssertQuaternionNear(Quaternion.Identity, track.Rotations[0]);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.3826834f, 0.9238795f), track.Rotations[1]);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.7071068f, 0.7071068f), track.Rotations[2]);
+        Assert.NotNull(track.KeyTranslations);
+        AssertVector3Equal(new Vector3(0, 1, 0), track.KeyTranslations![0]);
+        AssertVector3Equal(new Vector3(0, 2, 0), track.KeyTranslations[1]);
+        AssertVector3Equal(new Vector3(0, 2, 0), track.KeyTranslations[2]);
+        AssertVector3Equal(new Vector3(0, 1, 0), track.KeyTranslations[3]);
+
+        Span<Quaternion> pose = stackalloc Quaternion[2];
+        var translations = new Vector3[2];
+        MeshAnimationSampler.SamplePose(skin, table, 0, 0.125f, pose, translations);
+        AssertQuaternionNear(new Quaternion(0, 0, 0.1950903f, 0.9807853f), pose[1]);
+        AssertVector3Equal(new Vector3(0, 1.5f, 0), translations[1]);
+        // The joint without a track keeps its cooked rest pose on both channels.
+        Assert.Equal(skin.Joints[0].LocalRotation, pose[0]);
+        AssertVector3Equal(skin.Joints[0].LocalTranslation, translations[0]);
+    }
+
+    /// <summary>
+    /// A translation track whose keys never leave one value costs one stored vector: the cook marks
+    /// it constant instead of a per-key curve, and a key list equal to the rest translation is not
+    /// stored at all (the rotation-only path of the existing clip test).
+    /// </summary>
+    [Fact]
+    public void MeshCooker_CollapsesConstantGltfTranslationTrack()
+    {
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        var binPath = workspace.WriteBinary("Assets/Skinned.bin", CreateGltfSkinnedTriangleBuffer());
+        var animationPath = workspace.WriteBinary("Assets/SkinnedHeld.bin", CreateGltfHeldTranslationAnimationBuffer());
+        var gltfPath = workspace.Write("Assets/Held.gltf", $$"""
+            {
+              "asset": { "version": "2.0" },
+              "scene": 0,
+              "scenes": [ { "nodes": [0, 2] } ],
+              "nodes": [
+                { "translation": [0, 0, 0], "children": [1] },
+                { "translation": [0, 1, 0] },
+                { "mesh": 0, "skin": 0 }
+              ],
+              "skins": [
+                { "joints": [1, 0], "inverseBindMatrices": 4 }
+              ],
+              "animations": [
+                {
+                  "name": "Held",
+                  "samplers": [ { "input": 6, "output": 7 } ],
+                  "channels": [ { "sampler": 0, "target": { "node": 1, "path": "translation" } } ]
+                }
+              ],
+              "buffers": [
+                { "uri": "{{Path.GetFileName(binPath)}}", "byteLength": 266 },
+                { "uri": "{{Path.GetFileName(animationPath)}}", "byteLength": 32 }
+              ],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 72, "byteLength": 12 },
+                { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 128 },
+                { "buffer": 0, "byteOffset": 260, "byteLength": 6 },
+                { "buffer": 1, "byteOffset": 0, "byteLength": 8 },
+                { "buffer": 1, "byteOffset": 8, "byteLength": 24 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" },
+                { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5126, "count": 2, "type": "MAT4" },
+                { "bufferView": 5, "componentType": 5123, "count": 3, "type": "SCALAR" },
+                { "bufferView": 6, "componentType": 5126, "count": 2, "type": "SCALAR", "min": [0.0], "max": [1.0] },
+                { "bufferView": 7, "componentType": 5126, "count": 2, "type": "VEC3" }
+              ],
+              "meshes": [
+                {
+                  "primitives": [
+                    {
+                      "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "JOINTS_0": 2,
+                        "WEIGHTS_0": 3
+                      },
+                      "indices": 5
+                    }
+                  ]
+                }
+              ]
+            }
+            """);
+        db.AddAsset(meshGuid, "Mesh", gltfPath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/GltfHeld", MeshVariantKey.Default, MeshSourceFormat.GltfJson);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+
+        MeshSkin skin = MeshSkinPalette.ReadCookedSkin(bytes.Span, cooked);
+        MeshAnimationTable table = MeshAnimationTable.Read(bytes.Span, cooked);
+        MeshAnimationClip clip = Assert.Single(table.Clips);
+        MeshAnimationJointTrack track = clip.GetTrack(0);
+        Assert.Equal(1, track.JointIndex);
+        Assert.Equal(MeshAnimationTranslationMode.Constant, track.TranslationMode);
+        Assert.Null(track.KeyTranslations);
+        AssertVector3Equal(new Vector3(0, 3, 0), track.ConstantTranslation);
+
+        Span<Quaternion> pose = stackalloc Quaternion[2];
+        var translations = new Vector3[2];
+        MeshAnimationSampler.SamplePose(skin, table, 0, 0.5f, pose, translations);
+        AssertVector3Equal(new Vector3(0, 3, 0), translations[1]);
+        Assert.Equal(skin.Joints[1].LocalRotation, pose[1]);
+    }
+
+    /// <summary>
+    /// The invariant the translation cook exists for: the shipped rigs move their root - a walk's
+    /// hip bob - and the cooked clip has to carry it as real per-key keys, not as rest transforms.
+    /// </summary>
+    [Theory]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\Knight.glb")]
+    [InlineData(@"Arisen\Development\PackageGame\Local\com.arisen.samples\Assets\Meshes\CesiumMan.glb")]
+    public void MeshCooker_KeepsTheShippedRigsRootBob(string relativePath)
+    {
+        string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", relativePath));
+        Assert.True(File.Exists(sourcePath), $"The sample's mesh source is missing: {sourcePath}");
+
+        using var workspace = TestWorkspace.Create();
+        var meshGuid = Guid.NewGuid();
+        var db = new TestAssetDatabase(AssetSourceAccessMode.Diagnostic, Path.Combine(workspace.Root, "Cooked"));
+        db.AddAsset(meshGuid, "Mesh", sourcePath);
+
+        var mesh = new MeshAsset(meshGuid, "Tests/Imported", MeshVariantKey.Default, MeshSourceFormat.GltfBinary);
+        CookedMesh cooked = MeshAssetCooker.LoadOrCook(db, mesh);
+        var bytes = db.GetCookedAssetBytes(cooked.Handle);
+        MeshAnimationTable table = MeshAnimationTable.Read(bytes.Span, cooked);
+        Assert.True(table.ClipCount >= 1, $"The source '{Path.GetFileName(sourcePath)}' cooked no clips.");
+
+        float bestRange = 0.0f;
+        for (int clipIndex = 0; clipIndex < table.ClipCount; clipIndex++)
+        {
+            MeshAnimationClip clip = table.GetClip(clipIndex);
+            for (int trackIndex = 0; trackIndex < clip.TrackCount; trackIndex++)
+            {
+                MeshAnimationJointTrack track = clip.GetTrack(trackIndex);
+                if (track.TranslationMode != MeshAnimationTranslationMode.PerKey ||
+                    track.KeyTranslations is not { Length: > 0 } translations)
+                {
+                    continue;
+                }
+
+                Vector3 min = translations[0];
+                Vector3 max = translations[0];
+                foreach (Vector3 translation in translations)
+                {
+                    min = Vector3.Min(min, translation);
+                    max = Vector3.Max(max, translation);
+                }
+
+                bestRange = MathF.Max(bestRange, (max - min).Length());
+            }
+        }
+
+        Assert.True(
+            bestRange >= 0.01f,
+            $"Cooking '{Path.GetFileName(sourcePath)}' baked no per-key translation track wider " +
+            $"than a centimetre (best range {bestRange:0.####}); the rig's root motion was dropped.");
     }
 
     /// <summary>
@@ -4964,6 +5283,41 @@ public sealed class RenderingAssetPipelineTests
         WriteQuaternion(bytes, 12, Quaternion.Identity);
         WriteQuaternion(bytes, 28, Quaternion.Normalize(new Quaternion(0, 0, 0.7071068f, 0.7071068f)));
         WriteQuaternion(bytes, 44, Quaternion.Identity);
+        return bytes;
+    }
+
+    /// <summary>
+    /// A rotation channel on a 0/0.5/1 timeline and a translation channel on a 0/0.25/0.5/1
+    /// timeline, so the cook has to merge both and re-sample the rotation at 0.25 s.
+    /// </summary>
+    private static byte[] CreateGltfMergedTranslationAnimationBuffer()
+    {
+        var bytes = new byte[124];
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(0, sizeof(float)), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(4, sizeof(float)), 0.5f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(8, sizeof(float)), 1.0f);
+        WriteQuaternion(bytes, 12, Quaternion.Identity);
+        WriteQuaternion(bytes, 28, Quaternion.Normalize(new Quaternion(0, 0, 0.7071068f, 0.7071068f)));
+        WriteQuaternion(bytes, 44, Quaternion.Identity);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(60, sizeof(float)), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(64, sizeof(float)), 0.25f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(68, sizeof(float)), 0.5f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(72, sizeof(float)), 1.0f);
+        WriteVector3(bytes, 76, new Vector3(0, 1, 0));
+        WriteVector3(bytes, 88, new Vector3(0, 2, 0));
+        WriteVector3(bytes, 100, new Vector3(0, 2, 0));
+        WriteVector3(bytes, 112, new Vector3(0, 1, 0));
+        return bytes;
+    }
+
+    /// <summary>A translation channel that never leaves one value away from the joint's rest.</summary>
+    private static byte[] CreateGltfHeldTranslationAnimationBuffer()
+    {
+        var bytes = new byte[32];
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(0, sizeof(float)), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(4, sizeof(float)), 1.0f);
+        WriteVector3(bytes, 8, new Vector3(0, 3, 0));
+        WriteVector3(bytes, 20, new Vector3(0, 3, 0));
         return bytes;
     }
 

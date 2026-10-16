@@ -35,11 +35,11 @@ Recorded here because this roadmap is requirement-driven, and these gaps decide 
 - Skeletal animation: skinning and clip playback are in place - glTF `skins` cook into an optional
   rest-pose skeleton block with a stride-80 joint/weight vertex layout, a CPU reference palette, and a
   GPU path that poses a rigged mesh (lit and shadowed) from an entity's `SkeletonPoseComponent`, and a
-  mesh's payload now also bakes its source's clips as per-joint rotation keys that a runtime samples
-  by name, with the gallery's `character-skinning` sample playing an imported character's clip. What has
-  no runtime yet is everything above one clip: no blending, no state machine, no root motion, no
-  translation or scale tracks, and no clip asset kind of its own (clips ride the mesh that owns the
-  skeleton they animate).
+  mesh's payload now also bakes its source's clips as per-joint rotation and translation keys that a
+  runtime samples by name, with the gallery's `character-skinning` sample playing an imported
+  character's clip. What has no runtime yet is everything above one clip: no blending, no state
+  machine, no root-motion application, no scale tracks, and no clip asset kind of its own (clips ride
+  the mesh that owns the skeleton they animate).
 - Physics and collision: the solver exists behind `com.arisen.physics` (Jolt, fixed-step and
   deterministic, with the package's own native gate), and scene-authored rigid bodies now reach it
   - an explicit-shape component, body creation and destruction owned by the simulation, transform
@@ -191,24 +191,29 @@ frame allocates a palette block for every valid skinned item before the camera f
 (because a caster is drawn from a cascade's frustum instead), and the pass is prepared after that
 block is uploaded, so a shadow follows the pose rather than the bind pose.
 
-**C2's first slice has landed: clips.** A cooked mesh payload (version 6) carries an animation table
-beside its skeleton: the cook bakes each source clip's LINEAR rotation channels into per-joint key
-tracks in the cooked skeleton's order - a channel's node maps through the skin's slot map, so a clip
-animates the same skeleton the mesh cooked - and a clip is addressed by its name, which is why an
-imported pack's clips need no new asset kind or GUID table. `MeshAnimationTable` reads the table and
-`MeshAnimationSampler` fills a whole pose per frame (a joint without a track keeps the cooked rest
-rotation, and time wraps so a clip loops), which is exactly the array `SkeletonPoseComponent` and the
-skin palette already consume. What the payload does not carry yet is the rest of the source's channels:
-translation and scale tracks are counted and reported at cook time rather than silently dropped, and a
-non-LINEAR sampler is rejected instead of resampled. A joint whose node hangs under non-joint helper
-nodes folds those helpers' rest transforms - and their sampled rotations when a clip drives them -
-into one joint-relative track at cook time, so a rig authored with wrapper or control chains composes
-the same pose the source animates. The gallery's `character-skinning` sample plays the imported
-figure's walk clip, and its deterministic gate is
-`MeshCooker_BakesGltfClipsAndSamplerBlendsLinearRotations`, which cooks a skinned source with a clip
-and asserts the baked table, the wrapped sample, and the rest fallback, beside the bind-pose and
-animated-bounds invariants that cook the shipped rigs. What remains of C2 is blending, a state
-machine, root motion, and translation/scale tracks.
+**C2's first slice has landed: clips, rotations and translations.** A cooked mesh payload (version 7)
+carries an animation table beside its skeleton: the cook bakes each source clip's LINEAR rotation and
+translation channels into per-joint key tracks in the cooked skeleton's order - a channel's node maps
+through the skin's slot map, so a clip animates the same skeleton the mesh cooked - and a clip is
+addressed by its name, which is why an imported pack's clips need no new asset kind or GUID table. A
+joint animated on both channels carries one merged key timeline. `MeshAnimationTable` reads the table
+and `MeshAnimationSampler` fills a whole local pose per frame (a joint without a track keeps the
+cooked rest transform, and time wraps so a clip loops), which is exactly the array
+`SkeletonPoseComponent` and the skin palette already consume - so a walk's hip bob now rides the
+root joint's translation track. Translations are stored only when a joint actually moves: a track
+that repeats its rest translation costs nothing, and one constant value covers a joint that rests
+somewhere else. What the payload does not carry yet is scale - which the unit-scale pose slice
+cannot express, so scale channels are counted and reported at cook time rather than silently
+dropped - and a non-LINEAR sampler is rejected instead of resampled. A joint whose node hangs under
+non-joint helper nodes folds those helpers' rest transforms - and their sampled rotations and
+translations when a clip drives them - into one joint-relative track at cook time, so a rig
+authored with wrapper or control chains composes the same pose the source animates. The gallery's
+`character-skinning` sample plays the imported figure's walk clip, and its deterministic gates are
+`MeshCooker_MergesGltfTranslationTrackAndSamplerLerpsIt`,
+`MeshCooker_CollapsesConstantGltfTranslationTrack`, and
+`MeshCooker_KeepsTheShippedRigsRootBob`, which pins that both shipped rigs' bob survives the cook,
+beside the baked-table, animated-bounds, and bind-pose invariants. What remains of C2 is blending, a
+state machine, root-motion application, and scale tracks.
 
 **The posed frame is verified end to end, and the sample's own gate runs it.** The skinned vertex shader rebuilt the uploaded palette
 from its four stored columns as if they were rows, transposing every joint's transform; identity
